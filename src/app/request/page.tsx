@@ -60,7 +60,7 @@ export default function RequestPage() {
       
       setSubmittedData(data)
       setIsSubmitted(true)
-    } catch (error: any) {
+    } catch (error) {
       console.error('매물 의뢰 제출 실패:', error)
       setError('매물 의뢰 제출에 실패했습니다. 잠시 후 다시 시도해주세요.')
     } finally {

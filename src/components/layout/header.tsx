@@ -11,7 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { favoriteCount } = useFavorites()
-  const { user, signOut, loading } = useAuth()
+  const { user, signOut } = useAuth()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

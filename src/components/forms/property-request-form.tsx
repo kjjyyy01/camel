@@ -11,17 +11,15 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   Building, 
   MapPin, 
-  Won, 
+  DollarSign, 
   Calendar,
   Phone,
   Mail,
   User,
-  FileText,
-  CheckCircle
+  FileText
 } from 'lucide-react'
 
 // Zod 스키마 정의
@@ -73,7 +71,6 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
     trigger
   } = useForm<PropertyRequestFormData>({
     resolver: zodResolver(propertyRequestSchema),
@@ -103,7 +100,7 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
       ? ['propertyType', 'transactionType', 'location', 'requirements']
       : []
 
-    const isValid = await trigger(fieldsToValidate as any)
+    const isValid = await trigger(fieldsToValidate as (keyof PropertyRequestFormData)[])
     if (isValid) {
       setStep(step + 1)
     }
@@ -224,7 +221,7 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="sale">매매</SelectItem>
-                    <SelectItem value="jeonse">전세</SelectItem>
+                    <SelectItem value="lease">전세</SelectItem>
                     <SelectItem value="rent">월세</SelectItem>
                   </SelectContent>
                 </Select>
@@ -253,7 +250,7 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
                 <div>
                   <Label htmlFor="budgetMin">예산 (최소)</Label>
                   <div className="relative">
-                    <Won className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
                       id="budgetMin"
                       placeholder="1000"
@@ -266,7 +263,7 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
                 <div>
                   <Label htmlFor="budgetMax">예산 (최대)</Label>
                   <div className="relative">
-                    <Won className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
                       id="budgetMax"
                       placeholder="5000"
