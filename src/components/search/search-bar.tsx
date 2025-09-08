@@ -190,7 +190,7 @@ export function SearchBar({ onSearch, className }: SearchBarProps) {
         {/* 매물 유형 선택 */}
         <div className="md:w-36">
           <Select value={propertyType} onValueChange={(value) => setPropertyType(value as PropertyType | "all")}>
-            <SelectTrigger className="h-12">
+            <SelectTrigger className="h-12 min-h-12">
               <Building className="h-4 w-4 mr-2" />
               <SelectValue />
             </SelectTrigger>
@@ -208,23 +208,6 @@ export function SearchBar({ onSearch, className }: SearchBarProps) {
         <Button onClick={handleSearch} className="h-12 px-8 bg-primary hover:bg-primary/90">
           검색
         </Button>
-      </div>
-
-      {/* 인기 검색어 */}
-      <div className="mt-4 flex flex-wrap gap-2 justify-center">
-        <span className="text-sm text-muted-foreground">인기 검색어:</span>
-        {["강남역 사무실", "홍대 상가", "여의도 오피스텔", "판교 사무실"].map((term) => (
-          <button
-            key={term}
-            onClick={() => {
-              setKeyword(term);
-              handleSearch();
-            }}
-            className="text-sm text-primary hover:text-primary/80 hover:underline"
-          >
-            {term}
-          </button>
-        ))}
       </div>
     </div>
   );

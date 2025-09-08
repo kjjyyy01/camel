@@ -57,49 +57,22 @@ export function Footer() {
             <h3 className="font-semibold">고객 지원</h3>
             <nav className="space-y-2">
               <Link 
-                href="/help" 
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                도움말
-              </Link>
-              <Link 
-                href="/contact" 
+                href="/request" 
                 className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 문의하기
               </Link>
-              <Link 
-                href="/faq" 
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                자주 묻는 질문
-              </Link>
             </nav>
           </div>
 
-          {/* 회사 */}
+          {/* 연락처 정보 */}
           <div className="space-y-4">
-            <h3 className="font-semibold">회사</h3>
-            <nav className="space-y-2">
-              <Link 
-                href="/about" 
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                회사 소개
-              </Link>
-              <Link 
-                href="/terms" 
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                이용약관
-              </Link>
-              <Link 
-                href="/privacy" 
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                개인정보처리방침
-              </Link>
-            </nav>
+            <h3 className="font-semibold">연락처</h3>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <div>고객센터: 1588-0000</div>
+              <div>평일 09:00~18:00</div>
+              <div>토요일 09:00~13:00</div>
+            </div>
           </div>
         </div>
 
