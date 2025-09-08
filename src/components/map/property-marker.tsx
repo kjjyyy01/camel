@@ -12,12 +12,12 @@ interface PropertyMarkerProps {
 }
 
 export function PropertyMarker({ property, onClick, className }: PropertyMarkerProps) {
-  const formatPrice = (price: number | null, deposit: number | null, monthlyRent: number | null) => {
+  const formatPrice = (price: number | undefined, deposit: number | undefined, monthlyRent: number | undefined) => {
     if (property.transaction_type === 'sale' && price) {
       return `매매 ${price.toLocaleString()}만원`
-    } else if (property.transaction_type === 'jeonse' && deposit) {
+    } else if (property.transaction_type === 'lease' && deposit) {
       return `전세 ${deposit.toLocaleString()}만원`
-    } else if (property.transaction_type === 'rent') {
+    } else if (property.transaction_type === 'lease' && monthlyRent) {
       const depositText = deposit ? `${deposit.toLocaleString()}` : '0'
       const rentText = monthlyRent ? `/${monthlyRent.toLocaleString()}` : '/0'
       return `월세 ${depositText}${rentText}만원`
@@ -61,8 +61,7 @@ export function PropertyMarker({ property, onClick, className }: PropertyMarkerP
                 {getPropertyTypeLabel(property.type)}
               </Badge>
               <Badge variant="outline">
-                {property.transaction_type === 'sale' ? '매매' : 
-                 property.transaction_type === 'jeonse' ? '전세' : '월세'}
+                {property.transaction_type === 'sale' ? '매매' : '전월세'}
               </Badge>
             </div>
             <h3 className="font-semibold text-lg text-gray-900 line-clamp-1">
@@ -74,30 +73,23 @@ export function PropertyMarker({ property, onClick, className }: PropertyMarkerP
         {/* 가격 */}
         <div className="text-xl font-bold text-primary mb-3">
           {formatPrice(property.price, property.deposit, property.monthly_rent)}
-          {property.maintenance_fee && (
-            <span className="text-sm font-normal text-gray-500 ml-2">
-              (관리비 {property.maintenance_fee.toLocaleString()}만원)
-            </span>
-          )}
         </div>
 
         {/* 위치 */}
         <div className="flex items-center text-gray-600 mb-3">
           <MapPin className="h-4 w-4 mr-1" />
-          <span className="text-sm">{property.location.address}</span>
+          <span className="text-sm">{property.address}</span>
         </div>
 
         {/* 면적 및 건물 정보 */}
         <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
           <div className="flex items-center">
             <Building className="h-4 w-4 mr-1" />
-            <span>{property.area.total}㎡</span>
-            {property.area.floor && (
-              <span className="ml-2">{property.area.floor}</span>
-            )}
+            <span>{property.area}㎡</span>
+            <span className="ml-2">{property.floor}층</span>
           </div>
-          {property.building_info.year_built && (
-            <span>{property.building_info.year_built}년 건축</span>
+          {property.created_at && (
+            <span>{new Date(property.created_at).getFullYear()}년</span>
           )}
         </div>
 
@@ -128,12 +120,10 @@ export function PropertyMarker({ property, onClick, className }: PropertyMarkerP
             </div>
             <div className="flex items-center">
               <Heart className="h-3 w-3 mr-1" />
-              <span>{property.favorite_count}</span>
+              <span>{property.like_count}</span>
             </div>
           </div>
-          {property.contact.agent_name && (
-            <span>{property.contact.agent_name}</span>
-          )}
+          <span>문의가능</span>
         </div>
       </CardContent>
     </Card>

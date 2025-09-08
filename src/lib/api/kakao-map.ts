@@ -203,24 +203,41 @@ export const kakaoMapApi = new KakaoMapApi();
 export const loadKakaoMapScript = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     if (KakaoMapApi.isMapApiLoaded()) {
+      console.log('카카오 지도 API 이미 로드됨')
       resolve();
       return;
     }
 
-    const script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = KakaoMapApi.createMapScriptUrl();
-    
-    script.onload = () => {
-      (window as any).kakao.maps.load(() => {
-        resolve();
-      });
-    };
-    
-    script.onerror = () => {
-      reject(new Error('Failed to load Kakao Map API'));
-    };
+    try {
+      const scriptUrl = KakaoMapApi.createMapScriptUrl();
+      console.log('카카오 지도 스크립트 URL:', scriptUrl)
+      
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.src = scriptUrl;
+      
+      script.onload = () => {
+        console.log('카카오 지도 스크립트 로드됨')
+        if (!(window as any).kakao) {
+          reject(new Error('카카오 객체를 찾을 수 없습니다'));
+          return;
+        }
+        
+        (window as any).kakao.maps.load(() => {
+          console.log('카카오 지도 라이브러리 초기화 완료')
+          resolve();
+        });
+      };
+      
+      script.onerror = (error) => {
+        console.error('카카오 지도 스크립트 로드 실패:', error)
+        reject(new Error('카카오 지도 API 스크립트 로드에 실패했습니다'));
+      };
 
-    document.head.appendChild(script);
+      document.head.appendChild(script);
+    } catch (error) {
+      console.error('카카오 지도 스크립트 생성 실패:', error)
+      reject(error);
+    }
   });
 };

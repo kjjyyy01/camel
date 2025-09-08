@@ -1,175 +1,202 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from 'react'
-import { PropertyMap } from '@/components/map/property-map'
-import { PropertyMarker } from '@/components/map/property-marker'
-import { SearchBar } from '@/components/search/search-bar'
-import { generateMockProperties, DataNormalizer } from '@/lib/utils/data-normalizer'
-import { KoreaRealEstateApi } from '@/lib/api/korea-real-estate'
-import { Property } from '@/types/property'
+import { useState, useEffect } from "react";
+import { PropertyMap } from "@/components/map/property-map";
+import { PropertyMarker } from "@/components/map/property-marker";
+import { SearchBar } from "@/components/search/search-bar";
+import { generateMockProperties } from "@/lib/utils/data-normalizer";
+import { koreaRealEstateApi } from "@/lib/api/korea-real-estate";
+import { KakaoMapApi } from "@/lib/api/kakao-map";
+import { Property } from "@/types/property";
 
 interface SearchParams {
-  keyword: string
-  location: string
-  propertyType: string
+  keyword: string;
+  location: string;
+  propertyType: string;
 }
 
 export default function MapPage() {
-  const [properties, setProperties] = useState<Property[]>([])
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // 초기 매물 데이터 로드 (실제 API 사용)
   useEffect(() => {
     const loadProperties = async () => {
       try {
-        setIsLoading(true)
-        
-        let allProperties: Property[] = []
+        setIsLoading(true);
+
+        let allProperties: Property[] = [];
 
         try {
           // 실제 Korea Real Estate API 호출
-          const currentYear = new Date().getFullYear().toString()
-          const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, '0')
-          
+          const currentYear = new Date().getFullYear().toString();
+          const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, "0");
+
           // 서울 주요 구 검색
-          const regionCodes = ['11680', '11650', '11440'] // 강남, 서초, 마포
-          
+          const regionCodes = ["11680", "11650", "11440"]; // 강남, 서초, 마포
+
           for (const regionCode of regionCodes) {
             try {
-              const commercialData = await KoreaRealEstateApi.getCommercialProperties({
-                lawd_cd: regionCode,
-                deal_ymd: currentYear + currentMonth.padStart(2, '0')
-              })
-              
-              const normalizedData = commercialData.map(item => DataNormalizer.normalizeCommercialProperty(item))
-              allProperties.push(...normalizedData)
-              
+              // TODO: API 연동 완성 후 활성화
+              // TODO: API 메소드 존재하지 않음
+              // const commercialData = await KoreaRealEstateApi.getCommercialProperties({
+              //   lawd_cd: regionCode,
+              //   deal_ymd: currentYear + currentMonth.padStart(2, '0')
+              // })
+              //
+              // const normalizedData = commercialData.map(item => DataNormalizer.normalizeCommercialProperty(item))
+              // allProperties.push(...normalizedData)
+
               // API 호출 제한 방지
-              await new Promise(resolve => setTimeout(resolve, 300))
-              
+              await new Promise((resolve) => setTimeout(resolve, 300));
             } catch (regionError) {
-              console.warn(`지역 ${regionCode} 데이터 로드 실패:`, regionError)
+              console.warn(`지역 ${regionCode} 데이터 로드 실패:`, regionError);
             }
           }
-          
-          if (allProperties.length === 0) {
-            console.warn('API 데이터 없음, Mock 데이터 사용')
-            allProperties = generateMockProperties()
-          }
-          
-        } catch (apiError) {
-          console.warn('API 호출 실패, Mock 데이터 사용:', apiError)
-          allProperties = generateMockProperties()
-        }
-        
-        // 중복 제거
-        const uniqueProperties = allProperties.filter((property, index, self) => 
-          index === self.findIndex(p => p.location.address === property.location.address)
-        )
-        
-        setProperties(uniqueProperties)
-        
-      } catch (error) {
-        console.error('매물 데이터 로드 실패:', error)
-        setProperties(generateMockProperties())
-      } finally {
-        setIsLoading(false)
-      }
-    }
 
-    loadProperties()
-  }, [])
+          if (allProperties.length === 0) {
+            console.warn("API 데이터 없음, Mock 데이터 사용");
+            allProperties = generateMockProperties();
+          }
+        } catch (apiError) {
+          console.warn("API 호출 실패, Mock 데이터 사용:", apiError);
+          allProperties = generateMockProperties();
+        }
+
+        // 중복 제거
+        const uniqueProperties = allProperties.filter(
+          (property, index, self) => index === self.findIndex((p) => p.address === property.address)
+        );
+
+        setProperties(uniqueProperties);
+      } catch (error) {
+        console.error("매물 데이터 로드 실패:", error);
+        setProperties(generateMockProperties());
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProperties();
+  }, []);
 
   const handleSearch = async (params: SearchParams) => {
     try {
-      setIsLoading(true)
-      
-      let allProperties: Property[] = []
+      setIsLoading(true);
+      const kakaoMapApi = new KakaoMapApi();
+      let allProperties: Property[] = [];
 
       try {
         // API 호출로 새 데이터 가져오기
-        const currentYear = new Date().getFullYear().toString()
-        const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, '0')
-        
-        const regionCodes = ['11680', '11650', '11440', '11410', '11500']
-        
+        const currentYear = new Date().getFullYear().toString();
+        const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, "0");
+
+        const regionCodes = ["11680", "11650", "11440", "11410", "11500"];
+
         for (const regionCode of regionCodes) {
           try {
-            const commercialData = await KoreaRealEstateApi.getCommercialProperties({
-              lawd_cd: regionCode,
-              deal_ymd: currentYear + currentMonth.padStart(2, '0')
-            })
+            // 실제 API 호출로 데이터 가져오기
+            const commercialRentData = await koreaRealEstateApi.fetchOfficeRentData(
+              regionCode,
+              currentYear + currentMonth
+            );
             
-            const normalizedData = commercialData.map(item => DataNormalizer.normalizeCommercialProperty(item))
-            allProperties.push(...normalizedData)
+            const commercialSaleData = await koreaRealEstateApi.fetchCommercialSaleData(
+              regionCode,
+              currentYear + currentMonth
+            );
             
-            await new Promise(resolve => setTimeout(resolve, 200))
+            // Property 타입으로 변환 (좌표 변환 포함)
+            const normalizedRentProperties = await Promise.all(
+              commercialRentData.map(async item => {
+                const address = `${item.법정동} ${item.지번}`
+                try {
+                  const coordinates = await kakaoMapApi.geocoding(address)
+                  return koreaRealEstateApi.normalizeToProperty(item, coordinates || undefined)
+                } catch (error) {
+                  console.warn(`좌표 변환 실패: ${address}`, error)
+                  return koreaRealEstateApi.normalizeToProperty(item)
+                }
+              })
+            );
             
+            const normalizedSaleProperties = await Promise.all(
+              commercialSaleData.map(async item => {
+                const address = `${item.법정동} ${item.지번}`
+                try {
+                  const coordinates = await kakaoMapApi.geocoding(address)
+                  return koreaRealEstateApi.normalizeToProperty(item, coordinates || undefined)
+                } catch (error) {
+                  console.warn(`좌표 변환 실패: ${address}`, error)
+                  return koreaRealEstateApi.normalizeToProperty(item)
+                }
+              })
+            );
+            
+            allProperties.push(...normalizedRentProperties, ...normalizedSaleProperties);
+
+            await new Promise((resolve) => setTimeout(resolve, 200));
           } catch (regionError) {
-            console.warn(`지역 ${regionCode} 검색 실패:`, regionError)
+            console.warn(`지역 ${regionCode} 검색 실패:`, regionError);
           }
         }
-        
+
         if (allProperties.length === 0) {
-          allProperties = generateMockProperties()
+          allProperties = generateMockProperties();
         }
-        
       } catch (apiError) {
-        console.warn('API 검색 실패, Mock 데이터 사용:', apiError)
-        allProperties = generateMockProperties()
+        console.warn("API 검색 실패, Mock 데이터 사용:", apiError);
+        allProperties = generateMockProperties();
       }
-      
+
       // 검색 조건 적용
-      let filteredProperties = allProperties
-      
+      let filteredProperties = allProperties;
+
       if (params.keyword) {
-        filteredProperties = filteredProperties.filter(property =>
-          property.title.toLowerCase().includes(params.keyword.toLowerCase()) ||
-          property.description.toLowerCase().includes(params.keyword.toLowerCase()) ||
-          property.location.address.toLowerCase().includes(params.keyword.toLowerCase())
-        )
+        filteredProperties = filteredProperties.filter(
+          (property) =>
+            property.title.toLowerCase().includes(params.keyword.toLowerCase()) ||
+            property.description?.toLowerCase().includes(params.keyword.toLowerCase()) ||
+            property.address.toLowerCase().includes(params.keyword.toLowerCase())
+        );
       }
-      
+
       if (params.location) {
-        filteredProperties = filteredProperties.filter(property =>
-          property.location.address.toLowerCase().includes(params.location.toLowerCase()) ||
-          property.location.district?.toLowerCase().includes(params.location.toLowerCase()) ||
-          property.location.dong?.toLowerCase().includes(params.location.toLowerCase())
-        )
+        filteredProperties = filteredProperties.filter(
+          (property) =>
+            property.address.toLowerCase().includes(params.location.toLowerCase())
+        );
       }
-      
-      if (params.propertyType !== 'all') {
-        filteredProperties = filteredProperties.filter(property =>
-          property.type === params.propertyType
-        )
+
+      if (params.propertyType !== "all") {
+        filteredProperties = filteredProperties.filter((property) => property.type === params.propertyType);
       }
-      
+
       // 중복 제거
-      const uniqueProperties = filteredProperties.filter((property, index, self) => 
-        index === self.findIndex(p => p.location.address === property.location.address)
-      )
-      
-      setProperties(uniqueProperties)
-      
+      const uniqueProperties = filteredProperties.filter(
+        (property, index, self) => index === self.findIndex((p) => p.address === property.address)
+      );
+
+      setProperties(uniqueProperties);
     } catch (error) {
-      console.error('검색 실패:', error)
-      setProperties(generateMockProperties())
+      console.error("검색 실패:", error);
+      setProperties(generateMockProperties());
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleMarkerClick = (property: Property) => {
-    setSelectedProperty(property)
-  }
+    setSelectedProperty(property);
+  };
 
   const handlePropertyClick = () => {
     // TODO: 매물 상세 페이지로 이동
     if (selectedProperty) {
-      console.log('매물 상세 보기:', selectedProperty.id)
+      console.log("매물 상세 보기:", selectedProperty.id);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -184,12 +211,8 @@ export default function MapPage() {
       <div className="flex h-[calc(100vh-200px)]">
         {/* 지도 영역 */}
         <div className="flex-1 relative">
-          <PropertyMap
-            properties={properties}
-            onMarkerClick={handleMarkerClick}
-            className="w-full h-full"
-          />
-          
+          <PropertyMap properties={properties} onMarkerClick={handleMarkerClick} className="w-full h-full" />
+
           {isLoading && (
             <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
               <div className="text-center">
@@ -206,48 +229,37 @@ export default function MapPage() {
             <div className="p-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold">매물 정보</h2>
-                <button
-                  onClick={() => setSelectedProperty(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
+                <button onClick={() => setSelectedProperty(null)} className="text-gray-400 hover:text-gray-600">
                   ✕
                 </button>
               </div>
-              
+
               <PropertyMarker
                 property={selectedProperty}
                 onClick={handlePropertyClick}
                 className="w-full shadow-none border-0"
               />
-              
+
               {/* 추가 정보 */}
               <div className="mt-6 space-y-4">
                 <div>
                   <h3 className="font-semibold mb-2">상세 설명</h3>
-                  <p className="text-sm text-gray-600">
-                    {selectedProperty.description}
-                  </p>
+                  <p className="text-sm text-gray-600">{selectedProperty.description}</p>
                 </div>
-                
-                {selectedProperty.contact.agent_name && (
-                  <div>
-                    <h3 className="font-semibold mb-2">담당자 정보</h3>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <div>이름: {selectedProperty.contact.agent_name}</div>
-                      {selectedProperty.contact.phone && (
-                        <div>연락처: {selectedProperty.contact.phone}</div>
-                      )}
-                      {selectedProperty.contact.company && (
-                        <div>소속: {selectedProperty.contact.company}</div>
-                      )}
-                    </div>
+
+                <div>
+                  <h3 className="font-semibold mb-2">담당자 정보</h3>
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <div>이름: 부동산 담당자</div>
+                    <div>연락처: 문의 필요</div>
+                    <div>소속: Camel 부동산</div>
                   </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }
