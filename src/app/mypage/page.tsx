@@ -314,10 +314,6 @@ export default function MyPage() {
                       <input type="checkbox" className="rounded" defaultChecked />
                       <span className="text-sm">의뢰 진행 상황 알림 받기</span>
                     </label>
-                    <label className="flex items-center space-x-3">
-                      <input type="checkbox" className="rounded" />
-                      <span className="text-sm">마케팅 정보 수신 동의</span>
-                    </label>
                   </div>
                 </div>
 

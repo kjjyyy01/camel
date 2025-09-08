@@ -34,9 +34,6 @@ type PropertyRequestFormData = {
   additionalInfo?: string
   contactMethod: string[]
   contactTime: string
-  agreeToTerms: boolean
-  agreeToPrivacy: boolean
-  agreeToMarketing?: boolean
 }
 
 export default function RequestPage() {

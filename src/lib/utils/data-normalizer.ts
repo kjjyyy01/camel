@@ -198,10 +198,10 @@ function seededRandom(seed: number): number {
  * Mock 매물 데이터 생성 (캐시됨)
  */
 export function generateMockProperties(count = 20): Property[] {
-  // 이미 생성된 데이터가 있으면 캐시된 것 반환
-  if (cachedMockProperties) {
-    return cachedMockProperties.slice(0, count);
-  }
+  // 개발 중에는 매번 새로운 데이터로 생성 (가격 수정 반영)
+  // if (cachedMockProperties) {
+  //   return cachedMockProperties.slice(0, count);
+  // }
 
   const properties: Property[] = []
   
@@ -232,9 +232,9 @@ export function generateMockProperties(count = 20): Property[] {
       detailed_address: `${floor}층`,
       latitude: area.lat + (seededRandom(i + 60) - 0.5) * 0.01,
       longitude: area.lng + (seededRandom(i + 70) - 0.5) * 0.01,
-      price: transactionType === 'sale' ? Math.floor(seededRandom(i + 80) * 50000000000) + 100000000 : 0,
-      deposit: transactionType === 'lease' ? Math.floor(seededRandom(i + 90) * 500000000) + 50000000 : undefined,
-      monthly_rent: transactionType === 'lease' ? Math.floor(seededRandom(i + 100) * 10000000) + 1000000 : undefined,
+      price: transactionType === 'sale' ? Math.floor(seededRandom(i + 80) * 500000) + 50000 : 0,
+      deposit: transactionType === 'lease' ? Math.floor(seededRandom(i + 90) * 50000) + 5000 : undefined,
+      monthly_rent: transactionType === 'lease' ? Math.floor(seededRandom(i + 100) * 1000) + 100 : undefined,
       area: buildingArea,
       floor,
       total_floors: floor + Math.floor(seededRandom(i + 110) * 10) + 1,
