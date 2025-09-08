@@ -6,7 +6,7 @@ export function Footer() {
     <footer className="border-t bg-background">
       <div className="container mx-auto px-4 py-12">
         {/* 메인 푸터 콘텐츠 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           {/* 회사 정보 */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
@@ -21,58 +21,13 @@ export function Footer() {
             </p>
           </div>
 
-          {/* 서비스 */}
-          <div className="space-y-4">
-            <h3 className="font-semibold">서비스</h3>
-            <nav className="space-y-2">
-              <Link 
-                href="/map" 
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                지도 검색
-              </Link>
-              <Link 
-                href="/properties" 
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                매물 목록
-              </Link>
-              <Link 
-                href="/request" 
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                매물 의뢰
-              </Link>
-              <Link 
-                href="/favorites" 
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                찜 목록
-              </Link>
-            </nav>
-          </div>
-
-          {/* 고객 지원 */}
-          <div className="space-y-4">
-            <h3 className="font-semibold">고객 지원</h3>
-            <nav className="space-y-2">
-              <Link 
-                href="/request" 
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                문의하기
-              </Link>
-            </nav>
-          </div>
-
           {/* 연락처 정보 */}
-          <div className="space-y-4">
-            <h3 className="font-semibold">연락처</h3>
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <div>고객센터: 1588-0000</div>
-              <div>평일 09:00~18:00</div>
-              <div>토요일 09:00~13:00</div>
-            </div>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <div className="font-semibold text-foreground mb-2">고객센터</div>
+            <div>전화: 1588-0000</div>
+            <div>평일 09:00~18:00</div>
+            <div>토요일 09:00~13:00</div>
+            <div>일요일 및 공휴일 휴무</div>
           </div>
         </div>
 
