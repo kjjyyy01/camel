@@ -191,8 +191,18 @@ export function PropertyMap({
       <div className={`${className} flex items-center justify-center bg-gray-100 rounded-lg relative`}>
         <div className="text-center p-8">
           <div className="text-blue-500 mb-2">🗺️</div>
-          <div className="text-gray-600 mb-2">지도 개발 모드</div>
-          <div className="text-sm text-gray-500">{error}</div>
+          <div className="text-gray-600 mb-2">지도 서비스</div>
+          <div className="text-sm text-gray-500 mb-4">{error}</div>
+          
+          {/* 환경 변수 설정 안내 */}
+          {error.includes('API 키') && (
+            <div className="text-xs text-gray-400 bg-white p-3 rounded border max-w-sm">
+              <p className="font-medium mb-2">🔧 배포 환경 설정 필요:</p>
+              <p>1. Vercel Dashboard 접속</p>
+              <p>2. Settings → Environment Variables</p>
+              <p>3. NEXT_PUBLIC_KAKAO_MAP_API_KEY 추가</p>
+            </div>
+          )}
 
           {/* Mock 지도 표시 */}
           <div className="mt-4 w-full h-64 bg-green-100 rounded-lg relative overflow-hidden">

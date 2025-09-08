@@ -5,8 +5,20 @@ import { Location } from '@/types';
 const KAKAO_REST_API_KEY = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY;
 const KAKAO_MAP_API_KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY;
 
-if (!KAKAO_REST_API_KEY) {
-  console.warn('NEXT_PUBLIC_KAKAO_REST_API_KEY is not set');
+// 배포 환경에서의 환경 변수 체크
+if (typeof window !== 'undefined') {
+  if (!KAKAO_MAP_API_KEY) {
+    console.error('❌ NEXT_PUBLIC_KAKAO_MAP_API_KEY is not set. 카카오 지도가 작동하지 않습니다.');
+    console.log('📝 Vercel에서 Environment Variables를 설정해주세요:');
+    console.log('   1. Vercel 대시보드 → Settings → Environment Variables');
+    console.log('   2. NEXT_PUBLIC_KAKAO_MAP_API_KEY 추가');
+  } else {
+    console.log('✅ 카카오 지도 API 키가 설정되었습니다.');
+  }
+  
+  if (!KAKAO_REST_API_KEY) {
+    console.warn('⚠️  NEXT_PUBLIC_KAKAO_REST_API_KEY is not set');
+  }
 }
 
 export class KakaoMapApi {
