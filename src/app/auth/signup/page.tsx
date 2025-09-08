@@ -84,8 +84,8 @@ export default function SignUpPage() {
         name: formData.name
       })
       setSuccess(true)
-    } catch (error: any) {
-      setError(error.message || '회원가입에 실패했습니다.')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '회원가입에 실패했습니다.')
     } finally {
       setIsLoading(false)
     }
@@ -98,8 +98,8 @@ export default function SignUpPage() {
     try {
       await signInWithGoogle()
       // Google 로그인은 리디렉트되므로 여기서는 처리하지 않음
-    } catch (error: any) {
-      setError(error.message || '구글 로그인에 실패했습니다.')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '구글 로그인에 실패했습니다.')
       setIsLoading(false)
     }
   }

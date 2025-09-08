@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/auth-context'
@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react'
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { signIn, signInWithGoogle, loading } = useAuth()
@@ -32,8 +32,8 @@ export default function LoginPage() {
     try {
       await signIn(email, password)
       router.push(redirectTo)
-    } catch (error: any) {
-      setError(error.message || '로그인에 실패했습니다.')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '로그인에 실패했습니다.')
     } finally {
       setIsLoading(false)
     }
@@ -46,8 +46,8 @@ export default function LoginPage() {
     try {
       await signInWithGoogle()
       // Google 로그인은 리디렉트되므로 여기서는 처리하지 않음
-    } catch (error: any) {
-      setError(error.message || '구글 로그인에 실패했습니다.')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '구글 로그인에 실패했습니다.')
       setIsLoading(false)
     }
   }
@@ -213,5 +213,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }
