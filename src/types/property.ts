@@ -19,13 +19,35 @@ export interface Property {
   status: PropertyStatus;
   view_count: number;
   like_count: number;
+  contact_info?: ContactInfo;
+  agent_info?: AgentInfo;
   created_at: string;
   updated_at: string;
 }
 
+export interface ContactInfo {
+  phone?: string;
+  email?: string;
+  website?: string;
+  office_hours?: {
+    weekday: string;
+    saturday?: string;
+    sunday?: string;
+  };
+}
+
+export interface AgentInfo {
+  name: string;
+  company?: string;
+  profile_image?: string;
+  phone?: string;
+  email?: string;
+  license_number?: string;
+}
+
 export type PropertyType = 'office' | 'retail' | 'building' | 'warehouse' | 'factory';
 
-export type TransactionType = 'sale' | 'lease' | 'both';
+export type TransactionType = 'sale' | 'lease' | 'both' | 'jeonse' | 'rent';
 
 export type PropertyStatus = 'available' | 'pending' | 'sold' | 'rented';
 
