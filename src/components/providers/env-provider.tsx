@@ -9,8 +9,8 @@ import { logEnvironmentStatus } from '@/lib/utils/env-validator';
  */
 export function EnvProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    // 개발 모드이거나 콘솔에서 환경 변수 상태를 확인하고 싶을 때만 실행
-    if (process.env.NODE_ENV === 'development' || localStorage.getItem('debug-env') === 'true') {
+    // 환경 변수 검증은 명시적으로 요청했을 때만 실행
+    if (localStorage.getItem('debug-env') === 'true') {
       logEnvironmentStatus();
     }
   }, []);

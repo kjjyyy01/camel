@@ -25,16 +25,28 @@ export function validateEnvironmentVariables() {
   const missing: string[] = [];
   const warnings: string[] = [];
 
+  // 클라이언트에서는 NEXT_PUBLIC_ 환경 변수만 접근 가능
+  const getEnvValue = (key: string) => {
+    if (typeof window !== 'undefined') {
+      // 클라이언트 환경: NEXT_PUBLIC_ 변수만 접근 가능
+      return (window as any).env?.[key] || process.env[key];
+    }
+    // 서버 환경: 모든 환경 변수 접근 가능
+    return process.env[key];
+  };
+
   // 필수 환경 변수 체크
   ENV_CONFIG.required.forEach((key) => {
-    if (!process.env[key]) {
+    const value = getEnvValue(key);
+    if (!value) {
       missing.push(key);
     }
   });
 
   // 선택적 환경 변수 체크
   ENV_CONFIG.optional.forEach((key) => {
-    if (!process.env[key]) {
+    const value = getEnvValue(key);
+    if (!value) {
       warnings.push(key);
     }
   });
@@ -77,7 +89,9 @@ export function logEnvironmentStatus() {
  * 카카오 지도 API 키 검증
  */
 export function isKakaoMapApiKeyValid(): boolean {
-  const apiKey = process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY;
+  const apiKey = typeof window !== 'undefined' 
+    ? process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY
+    : process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY;
   return !!(apiKey && apiKey.length > 10);
 }
 
@@ -85,7 +99,11 @@ export function isKakaoMapApiKeyValid(): boolean {
  * Supabase 설정 검증
  */
 export function isSupabaseConfigValid(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = typeof window !== 'undefined'
+    ? process.env.NEXT_PUBLIC_SUPABASE_URL
+    : process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = typeof window !== 'undefined'
+    ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   return !!(url && key && url.includes('supabase') && key.length > 50);
 }
