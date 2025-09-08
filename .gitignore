@@ -42,3 +42,6 @@ next-env.d.ts
 
 # mcp
 .mcp.json
+
+# claude code
+CLAUDE.md
