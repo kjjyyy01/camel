@@ -219,6 +219,7 @@ export default function PropertiesPage() {
         <PropertyList
           properties={properties}
           isLoading={isLoading}
+          hasMore={hasMore}
           onLoadMore={hasMore ? handleLoadMore : undefined}
           onSortChange={handleSortChange}
           onFavoriteClick={handleFavoriteClick}

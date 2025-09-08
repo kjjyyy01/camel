@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { MapPin, Building, Eye, Heart, Phone, Calendar } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useFavorites } from '@/hooks/use-favorites'
 
 interface PropertyCardProps {
   property: Property
@@ -23,7 +23,8 @@ export function PropertyCard({
   className = "",
   showActions = true 
 }: PropertyCardProps) {
-  const [isFavorited, setIsFavorited] = useState(false)
+  const { toggleFavorite, isFavorite } = useFavorites()
+  const isFavorited = isFavorite(property.id)
 
   const formatPrice = (price: number | null, deposit: number | null, monthlyRent: number | null) => {
     if (property.transaction_type === 'sale' && price) {
@@ -63,7 +64,7 @@ export function PropertyCard({
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setIsFavorited(!isFavorited)
+    toggleFavorite(property.id)
     onFavoriteClick?.(property.id)
   }
 

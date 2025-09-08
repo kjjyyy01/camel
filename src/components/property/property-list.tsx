@@ -4,12 +4,14 @@ import { Property } from '@/types/property'
 import { PropertyCard } from './property-card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Grid, List, Filter } from 'lucide-react'
+import { Grid, List, Filter, Loader2 } from 'lucide-react'
 import { useState } from 'react'
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll'
 
 interface PropertyListProps {
   properties: Property[]
   isLoading?: boolean
+  hasMore?: boolean
   onLoadMore?: () => void
   onSortChange?: (sortBy: string) => void
   onFavoriteClick?: (propertyId: string) => void
@@ -31,6 +33,7 @@ const SORT_OPTIONS = [
 export function PropertyList({
   properties,
   isLoading = false,
+  hasMore = false,
   onLoadMore,
   onSortChange,
   onFavoriteClick,
@@ -39,6 +42,13 @@ export function PropertyList({
 }: PropertyListProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [sortBy, setSortBy] = useState<SortOption>('latest')
+
+  // 무한 스크롤 훅 사용
+  const { loadingRef } = useInfiniteScroll({
+    hasMore,
+    isLoading,
+    onLoadMore: onLoadMore || (() => {})
+  })
 
   const handleSortChange = (value: SortOption) => {
     setSortBy(value)
@@ -168,17 +178,26 @@ export function PropertyList({
             ))}
           </div>
 
-          {/* 더 보기 버튼 */}
+          {/* 무한 스크롤 로딩 인디케이터 */}
           {onLoadMore && (
-            <div className="text-center pt-8">
-              <Button
-                onClick={onLoadMore}
-                variant="outline"
-                size="lg"
-                disabled={isLoading}
-              >
-                {isLoading ? '로딩 중...' : '더 많은 매물 보기'}
-              </Button>
+            <div 
+              ref={loadingRef}
+              className="flex justify-center items-center py-8"
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-2 text-gray-500">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>더 많은 매물을 불러오는 중...</span>
+                </div>
+              ) : hasMore ? (
+                <div className="text-gray-400 text-sm">
+                  스크롤하여 더 많은 매물 보기
+                </div>
+              ) : (
+                <div className="text-gray-400 text-sm">
+                  모든 매물을 확인했습니다
+                </div>
+              )}
             </div>
           )}
         </>
