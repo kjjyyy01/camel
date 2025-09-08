@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, MapPin, Building } from "lucide-react";
+import { KakaoMapApi } from "@/lib/api/kakao-map";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -43,6 +44,43 @@ export function SearchBar({ onSearch, className }: SearchBarProps) {
   const [location, setLocation] = useState("");
   const [propertyType, setPropertyType] = useState<PropertyType | "all">("all");
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const kakaoMapApi = useRef(new KakaoMapApi());
+  const searchTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
+  // 위치 자동완성 검색
+  const searchLocationSuggestions = async (query: string) => {
+    if (query.length < 2) {
+      setLocationSuggestions([]);
+      return;
+    }
+
+    setIsLoadingSuggestions(true);
+    try {
+      const results = await kakaoMapApi.current.searchByKeyword(query, { size: 5 });
+      const suggestions = results.map(result => result.place_name).slice(0, 5);
+      setLocationSuggestions(suggestions);
+    } catch (error) {
+      console.warn('위치 검색 실패:', error);
+      setLocationSuggestions([]);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+
+  // 위치 입력 처리
+  const handleLocationChange = (value: string) => {
+    setLocation(value);
+    
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      searchLocationSuggestions(value);
+    }, 300);
+  };
 
   const handleSearch = () => {
     const params: SearchParams = {
@@ -52,6 +90,7 @@ export function SearchBar({ onSearch, className }: SearchBarProps) {
     };
 
     onSearch?.(params);
+    setShowLocationSuggestions(false);
 
     // 최근 검색어 저장 (로컬 스토리지)
     if (keyword.trim()) {
@@ -61,13 +100,33 @@ export function SearchBar({ onSearch, className }: SearchBarProps) {
     }
   };
 
+  // 정리 함수
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleSearch();
     }
   };
 
-  const filteredLocations = POPULAR_LOCATIONS.filter((loc) => loc.toLowerCase().includes(location.toLowerCase()));
+  // 자동완성 목록 결합 (카카오 API + 인기 지역)
+  const getLocationSuggestions = () => {
+    const filteredPopular = POPULAR_LOCATIONS.filter((loc) => 
+      loc.toLowerCase().includes(location.toLowerCase())
+    );
+    
+    // 카카오 API 결과와 인기 지역 합치기 (중복 제거)
+    const allSuggestions = [...locationSuggestions, ...filteredPopular];
+    const uniqueSuggestions = Array.from(new Set(allSuggestions));
+    
+    return uniqueSuggestions.slice(0, 8); // 최대 8개
+  };
 
   return (
     <div className={`w-full max-w-4xl mx-auto ${className}`}>
@@ -93,7 +152,7 @@ export function SearchBar({ onSearch, className }: SearchBarProps) {
             <Input
               placeholder="지역을 입력하세요"
               value={location}
-              onChange={(e) => setLocation(e.target.value)}
+              onChange={(e) => handleLocationChange(e.target.value)}
               onFocus={() => setShowLocationSuggestions(true)}
               onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 200)}
               onKeyDown={handleKeyPress}
@@ -102,18 +161,26 @@ export function SearchBar({ onSearch, className }: SearchBarProps) {
           </div>
 
           {/* 지역 자동완성 */}
-          {showLocationSuggestions && filteredLocations.length > 0 && (
+          {showLocationSuggestions && (getLocationSuggestions().length > 0 || isLoadingSuggestions) && (
             <div className="absolute top-full left-0 right-0 bg-white border rounded-md shadow-lg z-50 mt-1">
-              {filteredLocations.map((loc) => (
+              {isLoadingSuggestions && (
+                <div className="px-3 py-2 text-sm text-gray-500">
+                  검색 중...
+                </div>
+              )}
+              {getLocationSuggestions().map((loc, index) => (
                 <button
-                  key={loc}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                  key={`${loc}-${index}`}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm border-b border-gray-100 last:border-b-0"
                   onClick={() => {
                     setLocation(loc);
                     setShowLocationSuggestions(false);
                   }}
                 >
-                  {loc}
+                  <div className="flex items-center">
+                    <MapPin className="h-3 w-3 mr-2 text-gray-400" />
+                    {loc}
+                  </div>
                 </button>
               ))}
             </div>

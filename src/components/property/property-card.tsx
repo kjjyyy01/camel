@@ -26,15 +26,16 @@ export function PropertyCard({
   const { toggleFavorite, isFavorite } = useFavorites()
   const isFavorited = isFavorite(property.id)
 
-  const formatPrice = (price: number | null, deposit: number | null, monthlyRent: number | null) => {
+  const formatPrice = (price: number, deposit?: number, monthlyRent?: number) => {
     if (property.transaction_type === 'sale' && price) {
       return `매매 ${price.toLocaleString()}만원`
-    } else if (property.transaction_type === 'jeonse' && deposit) {
-      return `전세 ${deposit.toLocaleString()}만원`
-    } else if (property.transaction_type === 'rent') {
-      const depositText = deposit ? `${deposit.toLocaleString()}` : '0'
-      const rentText = monthlyRent ? `/${monthlyRent.toLocaleString()}` : '/0'
-      return `월세 ${depositText}${rentText}만원`
+    } else if (property.transaction_type === 'lease') {
+      if (deposit && !monthlyRent) {
+        return `전세 ${deposit.toLocaleString()}만원`
+      } else if (monthlyRent) {
+        const depositText = deposit ? `${deposit.toLocaleString()}` : '0'
+        return `월세 ${depositText}/${monthlyRent.toLocaleString()}만원`
+      }
     }
     return '가격 협의'
   }
@@ -85,13 +86,12 @@ export function PropertyCard({
                 {getPropertyTypeLabel(property.type)}
               </Badge>
               <Badge variant="outline" className="text-xs">
-                {property.transaction_type === 'sale' ? '매매' : 
-                 property.transaction_type === 'jeonse' ? '전세' : '월세'}
+                {property.transaction_type === 'sale' ? '매매' : '전월세'}
               </Badge>
-              {property.building_info.elevator && (
+              {property.amenities.includes('엘리베이터') && (
                 <Badge variant="secondary" className="text-xs">엘리베이터</Badge>
               )}
-              {property.building_info.parking && (
+              {property.amenities.includes('주차장') && (
                 <Badge variant="secondary" className="text-xs">주차가능</Badge>
               )}
             </div>
@@ -122,22 +122,14 @@ export function PropertyCard({
             <div className="text-2xl font-bold text-primary">
               {formatPrice(property.price, property.deposit, property.monthly_rent)}
             </div>
-            {property.maintenance_fee && (
-              <div className="text-sm text-gray-500">
-                관리비 {property.maintenance_fee.toLocaleString()}만원
-              </div>
-            )}
           </div>
 
           {/* 위치 정보 */}
           <div className="flex items-start gap-2">
             <MapPin className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
             <div className="space-y-1">
-              <div className="text-sm font-medium text-gray-900">{property.location.district} {property.location.dong}</div>
-              <div className="text-xs text-gray-500 line-clamp-2">{property.location.address}</div>
-              {property.location.detail && (
-                <div className="text-xs text-gray-400">{property.location.detail}</div>
-              )}
+              <div className="text-sm font-medium text-gray-900">{property.address}</div>
+              <div className="text-xs text-gray-500 line-clamp-2">{property.description || '상세 정보 문의'}</div>
             </div>
           </div>
 
@@ -146,19 +138,15 @@ export function PropertyCard({
             <div className="flex items-center gap-2">
               <Building className="h-4 w-4 text-gray-500" />
               <div>
-                <div className="font-medium">{property.area.total}㎡</div>
-                {property.area.floor && (
-                  <div className="text-xs text-gray-500">{property.area.floor}</div>
-                )}
+                <div className="font-medium">{property.area}㎡</div>
+                <div className="text-xs text-gray-500">{property.floor}층</div>
               </div>
             </div>
             
-            {property.building_info.year_built && (
-              <div className="text-right">
-                <div className="font-medium">{property.building_info.year_built}년</div>
-                <div className="text-xs text-gray-500">건축</div>
-              </div>
-            )}
+            <div className="text-right">
+              <div className="font-medium">{new Date(property.created_at).getFullYear()}년</div>
+              <div className="text-xs text-gray-500">등록</div>
+            </div>
           </div>
 
           {/* 편의시설 */}
@@ -191,7 +179,7 @@ export function PropertyCard({
               </div>
               <div className="flex items-center gap-1">
                 <Heart className="h-3 w-3" />
-                <span>{property.favorite_count}</span>
+                <span>{property.like_count}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
@@ -199,11 +187,9 @@ export function PropertyCard({
               </div>
             </div>
             
-            {property.contact.agent_name && (
-              <div className="text-xs text-gray-500">
-                {property.contact.agent_name}
-              </div>
-            )}
+            <div className="text-xs text-gray-500">
+              문의가능
+            </div>
           </div>
 
           {/* 액션 버튼들 */}

@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { PropertyList } from '@/components/property/property-list'
 import { SearchBar } from '@/components/search/search-bar'
-import { generateMockProperties, DataNormalizer } from '@/lib/utils/data-normalizer'
-import { KoreaRealEstateApi } from '@/lib/api/korea-real-estate'
+import { generateMockProperties } from '@/lib/utils/data-normalizer'
+import { koreaRealEstateApi } from '@/lib/api/korea-real-estate'
+import { KakaoMapApi } from '@/lib/api/kakao-map'
 import { Property } from '@/types/property'
 
 interface SearchParams {
@@ -14,7 +15,7 @@ interface SearchParams {
   propertyType: string
 }
 
-export default function PropertiesPage() {
+function PropertiesContent() {
   const searchParams = useSearchParams()
   const [properties, setProperties] = useState<Property[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -37,7 +38,7 @@ export default function PropertiesPage() {
   const loadProperties = async (searchConditions: SearchParams, append = false) => {
     try {
       setIsLoading(true)
-
+      const kakaoMapApi = new KakaoMapApi()
       let allProperties: Property[] = []
 
       try {
@@ -50,23 +51,50 @@ export default function PropertiesPage() {
         
         for (const regionCode of regionCodes) {
           try {
-            // 상업용 부동산 데이터
-            const commercialData = await KoreaRealEstateApi.getCommercialProperties({
-              lawd_cd: regionCode,
-              deal_ymd: currentYear + currentMonth.padStart(2, '0')
-            })
+            console.log(`지역 데이터 로드 시작: ${regionCode}`)
             
-            // 오피스텔 데이터
-            const officeData = await KoreaRealEstateApi.getOfficeProperties({
-              lawd_cd: regionCode,
-              deal_ymd: currentYear + currentMonth.padStart(2, '0')
-            })
+            // 상업용 부동산 전월세 데이터 호출
+            const commercialRentData = await koreaRealEstateApi.fetchOfficeRentData(
+              regionCode, 
+              currentYear + currentMonth
+            )
             
-            // 데이터 정규화 및 합치기
-            const normalizedCommercial = commercialData.map(item => DataNormalizer.normalizeCommercialProperty(item))
-            const normalizedOffice = officeData.map(item => DataNormalizer.normalizeCommercialProperty(item))
+            // 상업용 부동산 매매 데이터 호출  
+            const commercialSaleData = await koreaRealEstateApi.fetchCommercialSaleData(
+              regionCode,
+              currentYear + currentMonth
+            )
             
-            allProperties.push(...normalizedCommercial, ...normalizedOffice)
+            // 데이터를 Property 타입으로 변환 (좌표 변환 포함)
+            const normalizedRentProperties = await Promise.all(
+              commercialRentData.map(async item => {
+                const address = `${item.법정동} ${item.지번}`
+                try {
+                  const coordinates = await kakaoMapApi.geocoding(address)
+                  return koreaRealEstateApi.normalizeToProperty(item, coordinates || undefined)
+                } catch (error) {
+                  console.warn(`좌표 변환 실패: ${address}`, error)
+                  return koreaRealEstateApi.normalizeToProperty(item)
+                }
+              })
+            )
+            
+            const normalizedSaleProperties = await Promise.all(
+              commercialSaleData.map(async item => {
+                const address = `${item.법정동} ${item.지번}`
+                try {
+                  const coordinates = await kakaoMapApi.geocoding(address)
+                  return koreaRealEstateApi.normalizeToProperty(item, coordinates || undefined)
+                } catch (error) {
+                  console.warn(`좌표 변환 실패: ${address}`, error)
+                  return koreaRealEstateApi.normalizeToProperty(item)
+                }
+              })
+            )
+            
+            allProperties.push(...normalizedRentProperties, ...normalizedSaleProperties)
+            
+            console.log(`지역 ${regionCode}: 전월세 ${normalizedRentProperties.length}건, 매매 ${normalizedSaleProperties.length}건`)
             
             // API 호출 제한을 위한 딜레이
             await new Promise(resolve => setTimeout(resolve, 200))
@@ -77,10 +105,12 @@ export default function PropertiesPage() {
           }
         }
         
-        // API에서 데이터를 못 가져온 경우 Mock 데이터 사용
+        // API에서 데이터를 못 가져온 경우에만 Mock 데이터 사용
         if (allProperties.length === 0) {
           console.warn('API에서 데이터를 가져오지 못함, Mock 데이터 사용')
           allProperties = generateMockProperties()
+        } else {
+          console.log(`실제 API에서 ${allProperties.length}건의 매물 데이터 로드 성공`)
         }
         
       } catch (apiError) {
@@ -94,16 +124,14 @@ export default function PropertiesPage() {
       if (searchConditions.keyword) {
         filteredProperties = filteredProperties.filter(property =>
           property.title.toLowerCase().includes(searchConditions.keyword.toLowerCase()) ||
-          property.description.toLowerCase().includes(searchConditions.keyword.toLowerCase()) ||
-          property.location.address.toLowerCase().includes(searchConditions.keyword.toLowerCase())
+          property.description?.toLowerCase().includes(searchConditions.keyword.toLowerCase()) ||
+          property.address.toLowerCase().includes(searchConditions.keyword.toLowerCase())
         )
       }
       
       if (searchConditions.location) {
         filteredProperties = filteredProperties.filter(property =>
-          property.location.address.toLowerCase().includes(searchConditions.location.toLowerCase()) ||
-          property.location.district?.toLowerCase().includes(searchConditions.location.toLowerCase()) ||
-          property.location.dong?.toLowerCase().includes(searchConditions.location.toLowerCase())
+          property.address.toLowerCase().includes(searchConditions.location.toLowerCase())
         )
       }
       
@@ -115,7 +143,7 @@ export default function PropertiesPage() {
 
       // 중복 제거 (같은 주소의 매물)
       const uniqueProperties = filteredProperties.filter((property, index, self) => 
-        index === self.findIndex(p => p.location.address === property.location.address)
+        index === self.findIndex(p => p.address === property.address)
       )
 
       if (append) {
@@ -171,9 +199,9 @@ export default function PropertiesPage() {
           const priceB2 = b.price || b.deposit || b.monthly_rent || 0
           return priceB2 - priceA2
         case 'area-large':
-          return b.area.total - a.area.total
+          return b.area - a.area
         case 'area-small':
-          return a.area.total - b.area.total
+          return a.area - b.area
         case 'latest':
         default:
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -190,7 +218,7 @@ export default function PropertiesPage() {
     setProperties(prev => 
       prev.map(property => 
         property.id === propertyId 
-          ? { ...property, favorite_count: property.favorite_count + 1 }
+          ? { ...property, like_count: property.like_count + 1 }
           : property
       )
     )
@@ -227,5 +255,20 @@ export default function PropertiesPage() {
         />
       </div>
     </div>
+  )
+}
+
+export default function PropertiesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="mt-2 text-gray-600">매물 목록 로딩 중...</div>
+        </div>
+      </div>
+    }>
+      <PropertiesContent />
+    </Suspense>
   )
 }

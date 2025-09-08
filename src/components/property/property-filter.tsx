@@ -45,7 +45,7 @@ const TRANSACTION_TYPES = [
   { value: 'all', label: '전체' },
   { value: 'sale', label: '매매' },
   { value: 'rent', label: '월세' },
-  { value: 'jeonse', label: '전세' },
+  { value: 'lease', label: '전세/월세' },
 ] as const
 
 const AMENITY_OPTIONS = [
