@@ -27,23 +27,10 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [agreements, setAgreements] = useState({
-    terms: false,
-    privacy: false,
-    marketing: false
-  })
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
-    })
-  }
-
-  const handleAgreementChange = (key: keyof typeof agreements, checked: boolean) => {
-    setAgreements({
-      ...agreements,
-      [key]: checked
     })
   }
 
@@ -62,10 +49,6 @@ export default function SignUpPage() {
     }
     if (formData.password !== formData.confirmPassword) {
       setError('비밀번호가 일치하지 않습니다.')
-      return false
-    }
-    if (!agreements.terms || !agreements.privacy) {
-      setError('필수 약관에 동의해주세요.')
       return false
     }
     return true
@@ -310,44 +293,6 @@ export default function SignUpPage() {
                 </div>
               </div>
 
-              {/* 약관 동의 */}
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="terms"
-                    checked={agreements.terms}
-                    onCheckedChange={(checked) => handleAgreementChange('terms', !!checked)}
-                    disabled={isLoading}
-                  />
-                  <Label htmlFor="terms" className="text-sm">
-                    <span className="text-red-500">*</span> 이용약관에 동의합니다
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="privacy"
-                    checked={agreements.privacy}
-                    onCheckedChange={(checked) => handleAgreementChange('privacy', !!checked)}
-                    disabled={isLoading}
-                  />
-                  <Label htmlFor="privacy" className="text-sm">
-                    <span className="text-red-500">*</span> 개인정보처리방침에 동의합니다
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="marketing"
-                    checked={agreements.marketing}
-                    onCheckedChange={(checked) => handleAgreementChange('marketing', !!checked)}
-                    disabled={isLoading}
-                  />
-                  <Label htmlFor="marketing" className="text-sm">
-                    마케팅 정보 수신에 동의합니다 (선택)
-                  </Label>
-                </div>
-              </div>
 
               <Button
                 type="submit"

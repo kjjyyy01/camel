@@ -14,7 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   Building, 
   MapPin, 
-  DollarSign, 
   Calendar,
   Phone,
   Mail,
@@ -48,11 +47,6 @@ const propertyRequestSchema = z.object({
   // 연락 설정
   contactMethod: z.array(z.string()).min(1, '연락 방법을 최소 1개 선택해주세요'),
   contactTime: z.string().min(1, '연락 가능 시간을 선택해주세요'),
-  
-  // 약관 동의
-  agreeToTerms: z.boolean().refine(val => val === true, '이용약관에 동의해주세요'),
-  agreeToPrivacy: z.boolean().refine(val => val === true, '개인정보처리방침에 동의해주세요'),
-  agreeToMarketing: z.boolean().optional(),
 })
 
 type PropertyRequestFormData = z.infer<typeof propertyRequestSchema>
@@ -76,9 +70,6 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
     resolver: zodResolver(propertyRequestSchema),
     defaultValues: {
       contactMethod: [],
-      agreeToTerms: false,
-      agreeToPrivacy: false,
-      agreeToMarketing: false,
     }
   })
 
@@ -250,11 +241,11 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
                 <div>
                   <Label htmlFor="budgetMin">예산 (최소)</Label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <span className="absolute left-3 top-3 text-sm text-gray-400">₩</span>
                     <Input
                       id="budgetMin"
                       placeholder="1000"
-                      className="pl-10"
+                      className="pl-8"
                       {...register('budgetMin')}
                     />
                   </div>
@@ -263,11 +254,11 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
                 <div>
                   <Label htmlFor="budgetMax">예산 (최대)</Label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <span className="absolute left-3 top-3 text-sm text-gray-400">₩</span>
                     <Input
                       id="budgetMax"
                       placeholder="5000"
-                      className="pl-10"
+                      className="pl-8"
                       {...register('budgetMax')}
                     />
                   </div>
@@ -341,8 +332,8 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h3 className="text-lg font-semibold mb-2">연락 설정 및 약관 동의</h3>
-              <p className="text-gray-600 text-sm">연락 방법과 약관 동의를 완료해주세요</p>
+              <h3 className="text-lg font-semibold mb-2">연락 설정</h3>
+              <p className="text-gray-600 text-sm">선호하는 연락 방법을 선택해주세요</p>
             </div>
 
             <div className="space-y-4">
@@ -392,43 +383,6 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
                 />
               </div>
 
-              <div className="space-y-3 pt-4 border-t">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="agreeToTerms"
-                    {...register('agreeToTerms')}
-                  />
-                  <Label htmlFor="agreeToTerms" className="text-sm">
-                    <span className="text-red-500">*</span> 이용약관에 동의합니다
-                  </Label>
-                </div>
-                {errors.agreeToTerms && (
-                  <p className="text-red-500 text-sm">{errors.agreeToTerms.message}</p>
-                )}
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="agreeToPrivacy"
-                    {...register('agreeToPrivacy')}
-                  />
-                  <Label htmlFor="agreeToPrivacy" className="text-sm">
-                    <span className="text-red-500">*</span> 개인정보처리방침에 동의합니다
-                  </Label>
-                </div>
-                {errors.agreeToPrivacy && (
-                  <p className="text-red-500 text-sm">{errors.agreeToPrivacy.message}</p>
-                )}
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="agreeToMarketing"
-                    {...register('agreeToMarketing')}
-                  />
-                  <Label htmlFor="agreeToMarketing" className="text-sm">
-                    마케팅 정보 수신에 동의합니다 (선택)
-                  </Label>
-                </div>
-              </div>
             </div>
 
             <div className="flex gap-3">
