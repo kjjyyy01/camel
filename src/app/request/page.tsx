@@ -1,69 +1,97 @@
-"use client"
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { PropertyRequestForm } from '@/components/forms/property-request-form'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { 
-  CheckCircle, 
-  Clock,
-  Phone,
-  Mail,
-  MessageCircle,
-  ArrowLeft,
-  Building,
-  Users,
-  Star
-} from 'lucide-react'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { PropertyRequestForm } from "@/components/forms/property-request-form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, Clock, Phone, Mail, MessageCircle, ArrowLeft, Building, Users, Star } from "lucide-react";
 
 type PropertyRequestFormData = {
-  name: string
-  phone: string
-  email: string
-  propertyType: string
-  transactionType: string
-  location: string
-  budgetMin?: string
-  budgetMax?: string
-  areaMin?: string
-  areaMax?: string
-  moveInDate?: string
-  requirements: string
-  additionalInfo?: string
-  contactMethod: string[]
-  contactTime: string
-}
+  name: string;
+  phone: string;
+  email: string;
+  propertyType: string;
+  transactionType?: string;
+  location: string;
+  property_id?: string;
+  budgetMin?: string;
+  budgetMax?: string;
+  areaMin?: string;
+  areaMax?: string;
+  moveInDate?: string;
+  requirements?: string;
+  additionalInfo?: string;
+  contactMethod: string[];
+  contactTime?: string;
+};
 
 export default function RequestPage() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  const [error, setError] = useState('')
-  const [submittedData, setSubmittedData] = useState<PropertyRequestFormData | null>(null)
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState("");
+  const [submittedData, setSubmittedData] = useState<PropertyRequestFormData | null>(null);
 
-  const handleSubmit = async (data: PropertyRequestFormData) => {
-    setIsLoading(true)
-    setError('')
+  const handleSubmit = async (data: any) => {
+    setIsLoading(true);
+    setError("");
 
     try {
-      // TODO: 실제 API 연동
-      // 현재는 시뮬레이션
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Supabase에 데이터 저장 또는 이메일 전송 로직
-      console.log('매물 의뢰 데이터:', data)
-      
-      setSubmittedData(data)
-      setIsSubmitted(true)
+      // PropertyRequestForm에서 받은 데이터를 그대로 API로 전송
+      const apiData = {
+        property_id: data.property_id,
+        inquirer_name: data.name,
+        inquirer_phone: data.phone,
+        inquirer_email: data.email || null,
+        request_type: data.request_type || "consultation",
+        message: data.message || null,
+        budget_min: data.budget_min || null,
+        budget_max: data.budget_max || null,
+      };
+
+      console.log("전송할 데이터:", apiData);
+
+      // Supabase API 호출
+      const response = await fetch("/api/property-requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(apiData),
+      });
+
+      console.log("응답 상태:", response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("API 오류 응답:", errorData);
+        console.error("응답 헤더:", Object.fromEntries(response.headers.entries()));
+        throw new Error(errorData.error || errorData.details || "매물 의뢰 등록에 실패했습니다");
+      }
+
+      const result = await response.json();
+      console.log("매물 의뢰 성공:", result);
+
+      setSubmittedData({
+        name: data.name,
+        phone: data.phone,
+        email: data.email || "",
+        propertyType: data.request_type || "상담",
+        location: data.property_id,
+        contactMethod: ["전화"],
+        property_id: data.property_id,
+      } as any);
+      setIsSubmitted(true);
     } catch (error) {
-      console.error('매물 의뢰 제출 실패:', error)
-      setError('매물 의뢰 제출에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      console.error("매물 의뢰 제출 실패:", error);
+      setError(error instanceof Error ? error.message : "매물 의뢰 제출에 실패했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+
 
   if (isSubmitted && submittedData) {
     return (
@@ -72,19 +100,27 @@ export default function RequestPage() {
           <Card className="max-w-2xl mx-auto">
             <CardHeader className="text-center">
               <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <CardTitle className="text-2xl font-bold text-green-600">
-                매물 의뢰가 완료되었습니다!
-              </CardTitle>
+              <CardTitle className="text-2xl font-bold text-green-600">매물 의뢰가 완료되었습니다!</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h3 className="font-semibold text-green-800 mb-2">의뢰 정보</h3>
                 <div className="space-y-2 text-sm text-green-700">
-                  <div><strong>이름:</strong> {submittedData.name}</div>
-                  <div><strong>연락처:</strong> {submittedData.phone}</div>
-                  <div><strong>매물 유형:</strong> {submittedData.propertyType}</div>
-                  <div><strong>희망 지역:</strong> {submittedData.location}</div>
-                  <div><strong>선호 연락방법:</strong> {submittedData.contactMethod.join(', ')}</div>
+                  <div>
+                    <strong>이름:</strong> {submittedData.name}
+                  </div>
+                  <div>
+                    <strong>연락처:</strong> {submittedData.phone}
+                  </div>
+                  <div>
+                    <strong>매물 ID:</strong> {submittedData.property_id || submittedData.location}
+                  </div>
+                  <div>
+                    <strong>문의 유형:</strong> {submittedData.propertyType}
+                  </div>
+                  <div>
+                    <strong>선호 연락방법:</strong> {submittedData.contactMethod.join(", ")}
+                  </div>
                 </div>
               </div>
 
@@ -125,10 +161,10 @@ export default function RequestPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button onClick={() => router.push('/')} className="flex-1">
+                <Button onClick={() => router.push("/")} className="flex-1">
                   홈으로 돌아가기
                 </Button>
-                <Button onClick={() => router.push('/properties')} variant="outline" className="flex-1">
+                <Button onClick={() => router.push("/properties")} variant="outline" className="flex-1">
                   매물 둘러보기
                 </Button>
               </div>
@@ -150,7 +186,7 @@ export default function RequestPage() {
           </Card>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -158,12 +194,7 @@ export default function RequestPage() {
       <div className="container mx-auto px-4">
         {/* 뒤로가기 버튼 */}
         <div className="mb-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-            className="gap-2"
-          >
+          <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-2">
             <ArrowLeft className="h-4 w-4" />
             돌아가기
           </Button>
@@ -175,11 +206,10 @@ export default function RequestPage() {
             <Building className="h-5 w-5" />
             매물 의뢰 서비스
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            원하는 매물을 찾아드립니다
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">원하는 매물을 찾아드립니다</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            전문 부동산 컨설턴트가 고객님의 요구사항에 맞는<br />
+            전문 부동산 컨설턴트가 고객님의 요구사항에 맞는
+            <br />
             최적의 상업용 매물을 찾아서 추천해드립니다.
           </p>
         </div>
@@ -223,10 +253,7 @@ export default function RequestPage() {
         )}
 
         {/* 매물 의뢰 폼 */}
-        <PropertyRequestForm 
-          onSubmit={handleSubmit}
-          isLoading={isLoading}
-        />
+        <PropertyRequestForm onSubmit={handleSubmit} isLoading={isLoading} />
 
         {/* 추가 정보 */}
         <div className="max-w-2xl mx-auto mt-12">
@@ -247,7 +274,9 @@ export default function RequestPage() {
               </div>
               <div>
                 <h4 className="font-medium text-gray-900 mb-2">서비스 비용</h4>
-                <p>매물 의뢰 및 상담은 <strong>무료</strong>로 제공됩니다.</p>
+                <p>
+                  매물 의뢰 및 상담은 <strong>무료</strong>로 제공됩니다.
+                </p>
                 <p>계약 성사 시에만 중개수수료가 발생합니다.</p>
               </div>
               <div>
@@ -259,5 +288,5 @@ export default function RequestPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
