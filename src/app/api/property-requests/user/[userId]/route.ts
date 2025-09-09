@@ -4,10 +4,10 @@ import { getUserPropertyRequests } from '@/lib/api/property-requests'
 // GET: 특정 사용자의 매물 의뢰 목록 조회
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { userId } = params
+    const { userId } = await params
 
     if (!userId) {
       return NextResponse.json(

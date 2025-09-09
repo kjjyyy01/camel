@@ -102,34 +102,33 @@ export const getPropertyRequest = async (id: string): Promise<PropertyRequest | 
 };
 
 /**
- * 매물 의뢰 상태 업데이트
+ * 매물 의뢰 상태 업데이트 (현재 테이블에 status 필드가 없으므로 주석 처리)
  */
-export const updatePropertyRequestStatus = async (
-  id: string,
-  status: PropertyRequest["status"]
-): Promise<PropertyRequest> => {
-  try {
-    const { data, error } = await supabase
-      .from("property_requests")
-      .update({
-        status,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id)
-      .select()
-      .single();
+// export const updatePropertyRequestStatus = async (
+//   id: string,
+//   status: string
+// ): Promise<PropertyRequest> => {
+//   try {
+//     const { data, error } = await supabase
+//       .from("property_requests")
+//       .update({
+//         // status 필드가 테이블에 없으므로 향후 필요시 테이블 스키마 수정 필요
+//       })
+//       .eq("id", id)
+//       .select()
+//       .single();
 
-    if (error) {
-      console.error("매물 의뢰 상태 업데이트 실패:", error);
-      throw new Error(`매물 의뢰 상태 업데이트에 실패했습니다: ${error.message}`);
-    }
+//     if (error) {
+//       console.error("매물 의뢰 상태 업데이트 실패:", error);
+//       throw new Error(`매물 의뢰 상태 업데이트에 실패했습니다: ${error.message}`);
+//     }
 
-    return data;
-  } catch (error) {
-    console.error("매물 의뢰 상태 업데이트 중 오류:", error);
-    throw error;
-  }
-};
+//     return data;
+//   } catch (error) {
+//     console.error("매물 의뢰 상태 업데이트 중 오류:", error);
+//     throw error;
+//   }
+// };
 
 /**
  * 관리자용: 모든 매물 의뢰 목록 조회
