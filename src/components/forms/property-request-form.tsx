@@ -1,113 +1,161 @@
-"use client"
+"use client";
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { 
-  Building, 
-  MapPin, 
-  Calendar,
-  Phone,
-  Mail,
-  User,
-  FileText
-} from 'lucide-react'
+import { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Building, Phone, User, FileText } from "lucide-react";
+import { createPropertyRequest } from "@/lib/api/property-requests";
 
-// Zod 스키마 정의
+// Zod 스키마 정의 (API 타입과 일치)
 const propertyRequestSchema = z.object({
   // 개인정보
-  name: z.string().min(2, '이름은 2자 이상 입력해주세요'),
-  phone: z.string()
-    .min(10, '전화번호를 정확히 입력해주세요')
-    .regex(/^[0-9-+()]*$/, '올바른 전화번호 형식이 아닙니다'),
-  email: z.string().email('올바른 이메일 주소를 입력해주세요'),
-  
-  // 매물 정보
-  propertyType: z.string().min(1, '매물 유형을 선택해주세요'),
-  transactionType: z.string().min(1, '거래 유형을 선택해주세요'),
-  location: z.string().min(2, '희망 지역을 입력해주세요'),
-  budgetMin: z.string().optional(),
-  budgetMax: z.string().optional(),
-  areaMin: z.string().optional(),
-  areaMax: z.string().optional(),
-  moveInDate: z.string().optional(),
-  
-  // 상세 요구사항
-  requirements: z.string().min(10, '상세 요구사항을 10자 이상 입력해주세요'),
-  additionalInfo: z.string().optional(),
-  
-  // 연락 설정
-  contactMethod: z.array(z.string()).min(1, '연락 방법을 최소 1개 선택해주세요'),
-  contactTime: z.string().min(1, '연락 가능 시간을 선택해주세요'),
-})
+  name: z.string().min(2, "이름은 2자 이상 입력해주세요"),
+  phone: z
+    .string()
+    .min(10, "전화번호를 정확히 입력해주세요")
+    .regex(/^[0-9-+()]*$/, "올바른 전화번호 형식이 아닙니다"),
+  email: z.string().email("올바른 이메일 형식이 아닙니다").optional(),
 
-type PropertyRequestFormData = z.infer<typeof propertyRequestSchema>
+  // 매물 정보
+  property_id: z.string().min(1, "매물을 선택해주세요"),
+  request_type: z.enum(["viewing", "consultation", "negotiation", "other"]).optional(),
+  message: z.string().optional(),
+  budget_min: z.number().optional(),
+  budget_max: z.number().optional(),
+});
+
+type PropertyRequestFormData = z.infer<typeof propertyRequestSchema>;
 
 interface PropertyRequestFormProps {
-  onSubmit: (data: PropertyRequestFormData) => Promise<void>
-  isLoading?: boolean
+  onSubmit?: (data: PropertyRequestFormData) => Promise<void>;
+  isLoading?: boolean;
 }
 
 export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyRequestFormProps) {
-  const [step, setStep] = useState(1)
-  const [contactMethods, setContactMethods] = useState<string[]>([])
-
+  const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const {
     register,
     handleSubmit,
     formState: { errors },
     setValue,
-    trigger
+    trigger,
+    getValues,
+    reset,
+    control,
+    clearErrors,
+    watch,
   } = useForm<PropertyRequestFormData>({
     resolver: zodResolver(propertyRequestSchema),
     defaultValues: {
-      contactMethod: [],
-    }
-  })
+      name: "",
+      phone: "",
+      email: "",
+      property_id: "",
+      request_type: "consultation",
+      message: "",
+      budget_min: undefined,
+      budget_max: undefined,
+    },
+    mode: "onChange",
+  });
 
-  const handleContactMethodChange = (method: string, checked: boolean) => {
-    let newMethods: string[]
-    if (checked) {
-      newMethods = [...contactMethods, method]
-    } else {
-      newMethods = contactMethods.filter(m => m !== method)
-    }
-    setContactMethods(newMethods)
-    setValue('contactMethod', newMethods)
-  }
+  // 각 필드의 값을 watch로 가져오기
+  const nameValue = watch("name");
+  const phoneValue = watch("phone");
+  const emailValue = watch("email");
+  const propertyIdValue = watch("property_id");
 
   const nextStep = async () => {
-    const fieldsToValidate = step === 1 
-      ? ['name', 'phone', 'email']
-      : step === 2 
-      ? ['propertyType', 'transactionType', 'location', 'requirements']
-      : []
+    const fieldsToValidate = step === 1 ? ["name", "phone"] : step === 2 ? ["property_id"] : [];
 
-    const isValid = await trigger(fieldsToValidate as (keyof PropertyRequestFormData)[])
+    const isValid = await trigger(fieldsToValidate as (keyof PropertyRequestFormData)[]);
     if (isValid) {
-      setStep(step + 1)
+      // 현재 단계의 값들이 올바른지 한번 더 체크
+      const currentValues = getValues();
+      console.log(`단계 ${step} 완료 - 현재 값들:`, currentValues);
+
+      // 다음 단계로 넘어가기 전에 해당 필드 초기화
+      if (step === 1) {
+        // property_id 필드가 실수로 설정되지 않았는지 확인하고 초기화
+        setValue("property_id", "");
+        clearErrors("property_id");
+        console.log("property_id 필드 초기화 완료");
+      }
+
+      setStep(step + 1);
     }
-  }
+  };
 
   const prevStep = () => {
-    setStep(step - 1)
-  }
+    setStep(step - 1);
+  };
 
-  const handleFormSubmit = async (data: PropertyRequestFormData) => {
-    try {
-      await onSubmit(data)
-    } catch (error) {
-      console.error('매물 의뢰 제출 실패:', error)
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); // 기본 폼 제출 방지
+    
+    console.log("폼 제출 이벤트 발생, 현재 step:", step);
+
+    // step 3이 아니면 제출하지 않음
+    if (step !== 3) {
+      console.log("step 3이 아니므로 제출하지 않음");
+      return;
     }
-  }
+
+    // step 3에서만 실제 데이터 가져와서 처리
+    const data = getValues();
+
+    try {
+      setIsSubmitting(true);
+
+      if (onSubmit) {
+        await onSubmit(data);
+      } else {
+        // onSubmit이 없으면 직접 Supabase API 호출
+        const apiData = {
+          property_id: data.property_id,
+          inquirer_name: data.name,
+          inquirer_phone: data.phone,
+          inquirer_email: data.email || null,
+          request_type: data.request_type || "consultation",
+          message: data.message || null,
+          budget_min: data.budget_min || null,
+          budget_max: data.budget_max || null,
+        };
+
+        console.log("API 전송 데이터:", apiData);
+
+        // 직접 Supabase에 저장
+        const result = await createPropertyRequest(apiData);
+        console.log("매물 의뢰 성공:", result);
+
+        // 성공 메시지 표시
+        alert("🎉 매물 의뢰가 성공적으로 접수되었습니다!\n\n24시간 내에 담당자가 연락드리겠습니다.");
+
+        // 폼 완전 초기화
+        reset();
+        setStep(1);
+
+        // 페이지 새로고침 또는 성공 상태로 전환
+        if (typeof window !== "undefined") {
+          window.location.reload();
+        }
+      }
+    } catch (error) {
+      console.error("매물 의뢰 제출 실패:", error);
+      alert(`❌ 오류 발생: ${error instanceof Error ? error.message : "매물 의뢰 중 오류가 발생했습니다"}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const renderStep = () => {
     switch (step) {
@@ -126,14 +174,15 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
                   <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="name"
+                    name="name"
                     placeholder="홍길동"
                     className="pl-10"
-                    {...register('name')}
+                    autoComplete="off"
+                    value={nameValue || ""}
+                    onChange={(e) => setValue("name", e.target.value)}
                   />
                 </div>
-                {errors.name && (
-                  <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
-                )}
+                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
               </div>
 
               <div>
@@ -142,99 +191,86 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
                   <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="phone"
+                    name="phone"
                     placeholder="010-1234-5678"
                     className="pl-10"
-                    {...register('phone')}
+                    autoComplete="off"
+                    value={phoneValue || ""}
+                    onChange={(e) => setValue("phone", e.target.value)}
                   />
                 </div>
-                {errors.phone && (
-                  <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>
-                )}
+                {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>}
               </div>
 
               <div>
-                <Label htmlFor="email">이메일 *</Label>
+                <Label htmlFor="email">이메일 (선택)</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="example@email.com"
                     className="pl-10"
-                    {...register('email')}
+                    {...register("email")}
                   />
                 </div>
-                {errors.email && (
-                  <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-                )}
+                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
               </div>
             </div>
 
-            <Button onClick={nextStep} className="w-full">
+            <Button type="button" onClick={nextStep} className="w-full">
               다음 단계
             </Button>
           </div>
-        )
+        );
 
       case 2:
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h3 className="text-lg font-semibold mb-2">매물 정보</h3>
-              <p className="text-gray-600 text-sm">원하시는 매물 조건을 입력해주세요</p>
+              <h3 className="text-lg font-semibold mb-2">매물 선택</h3>
+              <p className="text-gray-600 text-sm">문의하실 매물 정보를 입력해주세요</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <Label>매물 유형 *</Label>
-                <Select onValueChange={(value) => setValue('propertyType', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="매물 유형 선택" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="office">사무실</SelectItem>
-                    <SelectItem value="retail">상가</SelectItem>
-                    <SelectItem value="building">건물</SelectItem>
-                    <SelectItem value="warehouse">창고</SelectItem>
-                    <SelectItem value="factory">공장</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.propertyType && (
-                  <p className="text-red-500 text-sm mt-1">{errors.propertyType.message}</p>
-                )}
-              </div>
-
-              <div>
-                <Label>거래 유형 *</Label>
-                <Select onValueChange={(value) => setValue('transactionType', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="거래 유형 선택" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sale">매매</SelectItem>
-                    <SelectItem value="lease">전세</SelectItem>
-                    <SelectItem value="rent">월세</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.transactionType && (
-                  <p className="text-red-500 text-sm mt-1">{errors.transactionType.message}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="location">희망 지역 *</Label>
+                <Label htmlFor="property_id">매물 ID *</Label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Building className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  {/* TODO(human): 실제 매물 선택 UI 구현 - 드롭다운, 검색, 또는 매물 ID 직접 입력 방식 중 선택 */}
                   <Input
-                    id="location"
-                    placeholder="예: 강남구, 서초구"
+                    id="property_id"
+                    name="property_id"
+                    placeholder="매물 ID를 입력하세요 (예: PROP001)"
                     className="pl-10"
-                    {...register('location')}
+                    autoComplete="off"
+                    value={propertyIdValue || ""}
+                    onChange={(e) => setValue("property_id", e.target.value)}
                   />
                 </div>
-                {errors.location && (
-                  <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>
-                )}
+                {errors.property_id && <p className="text-red-500 text-sm mt-1">{errors.property_id.message}</p>}
+              </div>
+
+              <div>
+                <Label>문의 유형</Label>
+                <Controller
+                  name="request_type"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="문의 유형 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="viewing">현장 방문</SelectItem>
+                        <SelectItem value="consultation">상담 요청</SelectItem>
+                        <SelectItem value="negotiation">가격 협상</SelectItem>
+                        <SelectItem value="other">기타</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.request_type && <p className="text-red-500 text-sm mt-1">{errors.request_type.message}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -246,7 +282,7 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
                       id="budgetMin"
                       placeholder="1000"
                       className="pl-8"
-                      {...register('budgetMin')}
+                      {...register("budget_min", { valueAsNumber: true })}
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-1">단위: 만원</p>
@@ -259,147 +295,107 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
                       id="budgetMax"
                       placeholder="5000"
                       className="pl-8"
-                      {...register('budgetMax')}
+                      {...register("budget_max", { valueAsNumber: true })}
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-1">단위: 만원</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="areaMin">면적 (최소)</Label>
-                  <Input
-                    id="areaMin"
-                    placeholder="30"
-                    {...register('areaMin')}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">단위: ㎡</p>
-                </div>
-                <div>
-                  <Label htmlFor="areaMax">면적 (최대)</Label>
-                  <Input
-                    id="areaMax"
-                    placeholder="100"
-                    {...register('areaMax')}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">단위: ㎡</p>
-                </div>
-              </div>
-
               <div>
-                <Label htmlFor="moveInDate">입주 희망일</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="moveInDate"
-                    type="date"
-                    className="pl-10"
-                    {...register('moveInDate')}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="requirements">상세 요구사항 *</Label>
+                <Label htmlFor="message">상세 요구사항</Label>
                 <div className="relative">
                   <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Textarea
-                    id="requirements"
+                    id="message"
                     placeholder="원하시는 매물의 구체적인 조건, 편의시설, 접근성 등을 자세히 작성해주세요"
                     className="pl-10 min-h-24"
-                    {...register('requirements')}
+                    {...register("message")}
                   />
                 </div>
-                {errors.requirements && (
-                  <p className="text-red-500 text-sm mt-1">{errors.requirements.message}</p>
-                )}
+                {errors.message && <p className="text-red-500 text-sm mt-1">{errors.message.message}</p>}
               </div>
             </div>
 
             <div className="flex gap-3">
-              <Button onClick={prevStep} variant="outline" className="flex-1">
+              <Button type="button" onClick={prevStep} variant="outline" className="flex-1">
                 이전 단계
               </Button>
-              <Button onClick={nextStep} className="flex-1">
+              <Button type="button" onClick={nextStep} className="flex-1">
                 다음 단계
               </Button>
             </div>
           </div>
-        )
+        );
 
       case 3:
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h3 className="text-lg font-semibold mb-2">연락 설정</h3>
-              <p className="text-gray-600 text-sm">선호하는 연락 방법을 선택해주세요</p>
+              <h3 className="text-lg font-semibold mb-2">최종 확인</h3>
+              <p className="text-gray-600 text-sm">매물 문의를 제출하기 전 마지막으로 확인해주세요</p>
             </div>
 
             <div className="space-y-4">
-              <div>
-                <Label>선호하는 연락 방법 *</Label>
-                <div className="space-y-2 mt-2">
-                  {['전화', '문자', '이메일', '카카오톡'].map((method) => (
-                    <div key={method} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={method}
-                        checked={contactMethods.includes(method)}
-                        onCheckedChange={(checked) => handleContactMethodChange(method, !!checked)}
-                      />
-                      <Label htmlFor={method}>{method}</Label>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">입력하신 정보</h4>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>
+                    <strong>이름:</strong> {getValues("name") || "입력되지 않음"}
+                  </div>
+                  <div>
+                    <strong>연락처:</strong> {getValues("phone") || "입력되지 않음"}
+                  </div>
+                  <div>
+                    <strong>매물 ID:</strong> {getValues("property_id") || "입력되지 않음"}
+                  </div>
+                  <div>
+                    <strong>문의 유형:</strong> {getValues("request_type") || "상담 요청"}
+                  </div>
+                  {getValues("email") && (
+                    <div>
+                      <strong>이메일:</strong> {getValues("email")}
                     </div>
-                  ))}
+                  )}
                 </div>
-                {errors.contactMethod && (
-                  <p className="text-red-500 text-sm mt-1">{errors.contactMethod.message}</p>
-                )}
               </div>
 
-              <div>
-                <Label>연락 가능 시간 *</Label>
-                <Select onValueChange={(value) => setValue('contactTime', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="연락 가능 시간 선택" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="morning">오전 (09:00-12:00)</SelectItem>
-                    <SelectItem value="afternoon">오후 (12:00-18:00)</SelectItem>
-                    <SelectItem value="evening">저녁 (18:00-21:00)</SelectItem>
-                    <SelectItem value="anytime">언제든지</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.contactTime && (
-                  <p className="text-red-500 text-sm mt-1">{errors.contactTime.message}</p>
-                )}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">서비스 안내</h4>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• 접수 완료 후 24시간 내에 담당자가 연락드립니다</li>
+                  <li>• 매물에 대한 자세한 상담을 제공해드립니다</li>
+                  <li>• 상담 및 매물 안내 서비스는 무료입니다</li>
+                </ul>
               </div>
-
-              <div>
-                <Label htmlFor="additionalInfo">추가 정보</Label>
-                <Textarea
-                  id="additionalInfo"
-                  placeholder="기타 요청사항이나 특별히 고려해야 할 사항이 있다면 작성해주세요"
-                  {...register('additionalInfo')}
-                />
-              </div>
-
             </div>
 
             <div className="flex gap-3">
-              <Button onClick={prevStep} variant="outline" className="flex-1" disabled={isLoading}>
+              <Button
+                type="button"
+                onClick={prevStep}
+                variant="outline"
+                className="flex-1"
+                disabled={isLoading || isSubmitting}
+              >
                 이전 단계
               </Button>
-              <Button onClick={handleSubmit(handleFormSubmit)} className="flex-1" disabled={isLoading}>
-                {isLoading ? '제출 중...' : '매물 의뢰하기'}
+              <Button 
+                type="button" 
+                onClick={handleFormSubmit}
+                className="flex-1" 
+                disabled={isLoading || isSubmitting}
+              >
+                {isLoading || isSubmitting ? "제출 중..." : "문의하기"}
               </Button>
             </div>
           </div>
-        )
+        );
 
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   return (
     <Card className="max-w-2xl mx-auto">
@@ -412,19 +408,16 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
           <span>단계 {step} / 3</span>
           <div className="flex gap-1">
             {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className={`w-2 h-2 rounded-full ${
-                  i <= step ? 'bg-primary' : 'bg-gray-300'
-                }`}
-              />
+              <div key={i} className={`w-2 h-2 rounded-full ${i <= step ? "bg-primary" : "bg-gray-300"}`} />
             ))}
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        {renderStep()}
+        <form autoComplete="off" onSubmit={handleFormSubmit}>
+          {renderStep()}
+        </form>
       </CardContent>
     </Card>
-  )
+  );
 }
