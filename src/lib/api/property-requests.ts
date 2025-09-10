@@ -4,57 +4,30 @@ import { PropertyRequest, CreatePropertyRequestData } from "@/types/property-req
 const supabase = createClient();
 
 /**
- * 매물 의뢰 생성 (Supabase Function 호출)
+ * 매물 의뢰 생성 (API Route 호출)
  */
 export const createPropertyRequest = async (data: CreatePropertyRequestData): Promise<PropertyRequest> => {
   try {
-    console.log("매물 의뢰 데이터:", data);
+    console.log("클라이언트에서 API 호출:", data);
 
-    // 현재 로그인된 사용자 정보 가져오기
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError) {
-      console.warn("사용자 정보를 가져오지 못했습니다:", userError);
-    }
-
-    // Supabase 함수 호출
-    const { data: requestId, error } = await supabase.rpc('create_property_request', {
-      p_property_id: data.property_id,
-      p_inquirer_name: data.inquirer_name,
-      p_inquirer_phone: data.inquirer_phone,
-      p_user_id: user?.id || null,
-      p_inquirer_email: data.inquirer_email || null,
-      p_request_type: data.request_type || 'viewing',
-      p_message: data.message || null,
-      p_budget_min: data.budget_min || null,
-      p_budget_max: data.budget_max || null,
+    const response = await fetch('/api/property-requests', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
     });
 
-    if (error) {
-      console.error("매물 의뢰 생성 실패:", error);
-      throw new Error(`매물 의뢰 생성에 실패했습니다: ${error.message}`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || '매물 의뢰 등록 중 오류가 발생했습니다');
     }
 
-    console.log("매물 의뢰 생성 성공, ID:", requestId);
-
-    // 생성된 데이터 조회해서 반환
-    const { data: propertyRequest, error: selectError } = await supabase
-      .from("property_requests")
-      .select("*")
-      .eq("id", requestId)
-      .single();
-
-    if (selectError) {
-      console.error("생성된 매물 의뢰 조회 실패:", selectError);
-      throw new Error(`생성된 매물 의뢰를 조회하지 못했습니다: ${selectError.message}`);
-    }
-
-    return propertyRequest;
+    const result = await response.json();
+    console.log("API 응답 성공:", result);
+    return result.data;
   } catch (error) {
-    console.error("매물 의뢰 생성 중 오류:", error);
+    console.error("매물 의뢰 API 호출 중 오류:", error);
     throw error;
   }
 };

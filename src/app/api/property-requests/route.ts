@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createPropertyRequest, getAllPropertyRequests } from '@/lib/api/property-requests'
+import { createClient } from '@/lib/supabase/server'
 import { CreatePropertyRequestData } from '@/types/property-request'
+import { getAllPropertyRequests } from '@/lib/api/property-requests'
 
 // POST: 새로운 매물 의뢰 생성
 export async function POST(request: NextRequest) {
@@ -8,6 +9,21 @@ export async function POST(request: NextRequest) {
     console.log('=== 매물 의뢰 API 호출 시작 ===');
     const body = await request.json() as CreatePropertyRequestData
     console.log('받은 데이터:', body);
+
+    // 서버 사이드 Supabase 클라이언트 생성
+    const supabase = await createClient();
+
+    // 현재 로그인된 사용자 정보 가져오기
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    console.log('🔍 서버 사이드 인증 상태 체크:');
+    console.log('- User:', user);
+    console.log('- User ID:', user?.id);
+    console.log('- User Error:', userError);
+    console.log('- User Email:', user?.email);
 
     // 필수 필드 검증
     if (!body.inquirer_name || !body.inquirer_phone || !body.property_id) {
@@ -22,7 +38,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 전화번호 형식 검증 (간단한 한국 전화번호 형식)
+    // 전화번호 형식 검증
     const phoneRegex = /^[0-9-+()]*$/
     if (!phoneRegex.test(body.inquirer_phone) || body.inquirer_phone.length < 10) {
       return NextResponse.json(
@@ -39,10 +55,45 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 매물 의뢰 생성
-    console.log('createPropertyRequest 호출 전');
-    const propertyRequest = await createPropertyRequest(body)
-    console.log('createPropertyRequest 호출 후, 결과:', propertyRequest);
+
+    // INSERT 할 데이터 준비
+    const insertData = {
+      property_id: body.property_id,
+      inquirer_name: body.inquirer_name,
+      inquirer_phone: body.inquirer_phone,
+      user_id: user?.id || null, // 로그인된 경우 user.id, 아니면 null 허용
+      inquirer_email: body.inquirer_email || null,
+      request_type: body.request_type || 'consultation',
+      message: body.message || null,
+      budget_min: body.budget_min || null,
+      budget_max: body.budget_max || null,
+    };
+
+    console.log('✅ INSERT 할 데이터:');
+    console.log('- property_id:', insertData.property_id);
+    console.log('- user_id:', insertData.user_id);
+    console.log('- inquirer_name:', insertData.inquirer_name);
+    console.log('- Full Data:', insertData);
+
+    // 직접 테이블에 INSERT
+    const { data: propertyRequest, error } = await supabase
+      .from("property_requests")
+      .insert(insertData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("❌ 매물 의뢰 생성 실패:", error);
+      return NextResponse.json(
+        { 
+          error: '매물 의뢰 등록 중 오류가 발생했습니다',
+          details: error.message
+        },
+        { status: 500 }
+      )
+    }
+
+    console.log("✅ 매물 의뢰 생성 성공:", propertyRequest);
 
     return NextResponse.json(
       { 
