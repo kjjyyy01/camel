@@ -2,16 +2,26 @@
 
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Heart, User, Menu, LogOut } from 'lucide-react'
-import { useState } from 'react'
-import { useFavorites } from '@/hooks/use-favorites'
+import { User, Menu, LogOut, Heart } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
+import { Badge } from '@/components/ui/badge'
+import useLikesStore from '@/stores/likes-store'
+import { useLikesHydration } from '@/hooks/use-likes-hydration'
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const { favoriteCount } = useFavorites()
   const { user, signOut } = useAuth()
+  const likedCount = useLikesStore(state => state.getLikedCount())
+  const isHydrated = useLikesStore(state => state.isHydrated)
+  const [mounted, setMounted] = useState(false)
+  
+  useLikesHydration()
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -44,21 +54,29 @@ export function Header() {
           >
             매물 의뢰
           </Link>
+          <Link 
+            href="/inquiry-lookup" 
+            className="text-base font-medium transition-colors hover:text-primary"
+          >
+            의뢰 조회
+          </Link>
         </nav>
 
         {/* 우측 액션 버튼들 */}
         <div className="flex items-center space-x-2">
-
-          {/* 찜 목록 */}
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/favorites" className="relative">
+          {/* 좋아요 버튼 */}
+          <Button variant="ghost" size="sm" asChild className="relative">
+            <Link href="/likes">
               <Heart className="h-4 w-4" />
-              {favoriteCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {favoriteCount > 99 ? '99+' : favoriteCount}
-                </span>
+              {mounted && isHydrated && likedCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 text-xs"
+                >
+                  {likedCount}
+                </Badge>
               )}
-              <span className="sr-only">찜 목록</span>
+              <span className="sr-only">좋아요한 매물</span>
             </Link>
           </Button>
 
@@ -78,9 +96,6 @@ export function Header() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/mypage">마이페이지</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/favorites">찜한 매물</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
@@ -138,6 +153,13 @@ export function Header() {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               매물 의뢰
+            </Link>
+            <Link 
+              href="/inquiry-lookup" 
+              className="block text-base font-medium transition-colors hover:text-primary"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              의뢰 조회
             </Link>
           </nav>
         </div>

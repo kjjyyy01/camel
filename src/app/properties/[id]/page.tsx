@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Property } from "@/types/property";
 import { generateMockProperties } from "@/lib/utils/data-normalizer";
-import { useFavorites } from "@/hooks/use-favorites";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +22,6 @@ import {
 } from "@/components/ui/carousel";
 import {
   ArrowLeft,
-  Heart,
   Share2,
   MapPin,
   Building,
@@ -38,7 +36,10 @@ import {
   Hospital,
   GraduationCap,
   Camera,
+  Heart,
 } from "lucide-react";
+import useLikesStore from "@/stores/likes-store";
+import { useLikesHydration } from "@/hooks/use-likes-hydration";
 
 export default function PropertyDetailPage() {
   const params = useParams();
@@ -49,8 +50,15 @@ export default function PropertyDetailPage() {
   const [imageError, setImageError] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [api, setApi] = useState<CarouselApi>();
-  const { toggleFavorite, isFavorite } = useFavorites();
-  const isFavorited = property ? isFavorite(property.id) : false;
+  const { isLiked, toggleLike } = useLikesStore();
+  const isHydrated = useLikesStore(state => state.isHydrated);
+  const [mounted, setMounted] = useState(false);
+  
+  useLikesHydration();
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const loadProperty = async () => {
@@ -96,10 +104,6 @@ export default function PropertyDetailPage() {
     };
   }, [api]);
 
-  const handleFavoriteClick = () => {
-    if (!property) return;
-    toggleFavorite(property.id);
-  };
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -117,6 +121,20 @@ export default function PropertyDetailPage() {
       navigator.clipboard.writeText(window.location.href);
       alert("링크가 클립보드에 복사되었습니다!");
     }
+  };
+
+  const handleLikeClick = () => {
+    if (!property) return;
+    
+    toggleLike({
+      id: property.id,
+      name: property.title,
+      address: property.address,
+      price: property.price,
+      type: property.type,
+      area: property.area,
+      imageUrl: property.images?.[0],
+    });
   };
 
 
@@ -160,18 +178,28 @@ export default function PropertyDetailPage() {
             </Button>
 
             <div className="flex items-center gap-1 md:gap-2">
+              {mounted && isHydrated && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleLikeClick} 
+                  className="gap-2"
+                >
+                  <Heart 
+                    className={`h-4 w-4 transition-colors ${
+                      property && isLiked(property.id) 
+                        ? 'fill-red-500 text-red-500' 
+                        : 'text-gray-600'
+                    }`}
+                  />
+                  <span className="hidden sm:inline">
+                    {property && isLiked(property.id) ? '좋아요 취소' : '좋아요'}
+                  </span>
+                </Button>
+              )}
               <Button variant="ghost" size="sm" onClick={handleShare} className="gap-2">
                 <Share2 className="h-4 w-4" />
                 <span className="hidden sm:inline">공유</span>
-              </Button>
-              <Button
-                variant={isFavorited ? "default" : "ghost"}
-                size="sm"
-                onClick={handleFavoriteClick}
-                className="gap-2"
-              >
-                <Heart className={`h-4 w-4 ${isFavorited ? "fill-current" : ""}`} />
-                <span className="hidden sm:inline">찜하기</span>
               </Button>
             </div>
           </div>
@@ -529,16 +557,6 @@ export default function PropertyDetailPage() {
                   </div>
                 </div>
 
-                {/* 관심 매물 등록 */}
-                <Button 
-                  variant={isFavorited ? "default" : "outline"} 
-                  className="w-full gap-2" 
-                  size="lg" 
-                  onClick={handleFavoriteClick}
-                >
-                  <Heart className={`h-4 w-4 ${isFavorited ? "fill-current" : ""}`} />
-                  {isFavorited ? "관심매물 해제" : "관심매물 등록"}
-                </Button>
 
                 {/* 안내 문구 */}
                 <div className="pt-4 border-t text-center text-sm text-gray-500">
