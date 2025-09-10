@@ -7,8 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { useFavorites } from '@/hooks/use-favorites'
-import { User, Heart, FileText, Settings, Phone, Mail, MapPin } from 'lucide-react'
+import { User, FileText, Settings, Phone, Mail, MapPin } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -58,7 +57,6 @@ const mockFavoriteProperties = [
 
 export default function MyPage() {
   const { user, loading } = useAuth()
-  const { favorites } = useFavorites()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('profile')
 
@@ -109,14 +107,10 @@ export default function MyPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="w-4 h-4" />
               <span className="hidden sm:block">프로필</span>
-            </TabsTrigger>
-            <TabsTrigger value="favorites" className="flex items-center gap-2">
-              <Heart className="w-4 h-4" />
-              <span className="hidden sm:block">찜한 매물</span>
             </TabsTrigger>
             <TabsTrigger value="requests" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
@@ -175,10 +169,6 @@ export default function MyPage() {
                     <h4 className="font-medium">활동 현황</h4>
                     <div className="space-y-3">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">찜한 매물</span>
-                        <Badge variant="secondary">{favorites.length}개</Badge>
-                      </div>
-                      <div className="flex justify-between text-sm">
                         <span className="text-gray-600">의뢰 내역</span>
                         <Badge variant="secondary">{mockPropertyRequests.length}건</Badge>
                       </div>
@@ -199,54 +189,6 @@ export default function MyPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="favorites">
-            <Card>
-              <CardHeader>
-                <CardTitle>찜한 매물 ({favorites.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {favorites.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Heart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 mb-4">찜한 매물이 없습니다</p>
-                    <Button asChild>
-                      <Link href="/properties">매물 둘러보기</Link>
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {mockFavoriteProperties.map((property) => (
-                      <div key={property.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div className="flex items-start space-x-4">
-                          <div className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center">
-                            <span className="text-xs text-gray-500">이미지</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-lg mb-2 truncate">{property.title}</h3>
-                            <p className="text-gray-600 text-sm mb-2">{property.address}</p>
-                            <div className="flex items-center space-x-4 text-sm">
-                              <span className="font-semibold text-primary">
-                                {formatPrice(property.price)}
-                              </span>
-                              <span className="text-gray-500">{property.area}㎡</span>
-                              <Badge variant="outline">
-                                {property.type === 'office' ? '오피스' : '상가'}
-                              </Badge>
-                            </div>
-                          </div>
-                          <div className="flex flex-col space-y-2">
-                            <Button size="sm" asChild>
-                              <Link href={`/properties/${property.id}`}>상세보기</Link>
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="requests">
             <Card>

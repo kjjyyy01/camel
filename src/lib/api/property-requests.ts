@@ -97,6 +97,31 @@ export const getPropertyRequest = async (id: string): Promise<PropertyRequest | 
 // };
 
 /**
+ * 전화번호로 매물 의뢰 조회
+ */
+export const getPropertyRequestsByPhone = async (phone: string): Promise<PropertyRequest[]> => {
+  try {
+    // 하이픈이 없는 형태와 있는 형태 모두 검색
+    const phoneWithHyphen = phone.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
+    const phoneWithoutHyphen = phone.replace(/[^\d]/g, "");
+
+    const { data, error } = await supabase
+      .from("property_requests")
+      .select("*")
+      .or(`inquirer_phone.eq.${phoneWithoutHyphen},inquirer_phone.eq.${phoneWithHyphen}`)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw new Error(`매물 의뢰 목록을 가져오지 못했습니다: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
  * 관리자용: 모든 매물 의뢰 목록 조회
  */
 export const getAllPropertyRequests = async (): Promise<PropertyRequest[]> => {

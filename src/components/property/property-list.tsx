@@ -14,7 +14,6 @@ interface PropertyListProps {
   hasMore?: boolean
   onLoadMore?: () => void
   onSortChange?: (sortBy: string) => void
-  onFavoriteClick?: (propertyId: string) => void
   onContactClick?: (property: Property) => void
   className?: string
 }
@@ -36,7 +35,6 @@ export function PropertyList({
   hasMore = false,
   onLoadMore,
   onSortChange,
-  onFavoriteClick,
   onContactClick,
   className = ""
 }: PropertyListProps) {
@@ -171,7 +169,6 @@ export function PropertyList({
               <PropertyCard
                 key={property.id}
                 property={property}
-                onFavoriteClick={onFavoriteClick}
                 onContactClick={onContactClick}
                 className={viewMode === 'list' ? 'md:flex md:flex-row' : ''}
               />

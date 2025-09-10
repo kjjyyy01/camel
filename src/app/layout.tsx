@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { AuthProvider } from "@/contexts/auth-context";
 import { EnvProvider } from "@/components/providers/env-provider";
+import { QueryProvider } from "@/components/providers/query-client-provider";
 
 export const metadata: Metadata = {
   title: "Camel - 상업용 부동산 전문 플랫폼",
@@ -20,13 +21,13 @@ export default function RootLayout({
     <html lang="ko">
       <body className="antialiased min-h-screen flex flex-col">
         <EnvProvider>
-          <AuthProvider>
-            <Header />
-            <main className="flex-1">
-              {children}
-            </main>
-            <Footer />
-          </AuthProvider>
+          <QueryProvider>
+            <AuthProvider>
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </AuthProvider>
+          </QueryProvider>
         </EnvProvider>
       </body>
     </html>

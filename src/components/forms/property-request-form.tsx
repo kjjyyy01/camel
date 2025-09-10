@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building, Phone, User, FileText } from "lucide-react";
 import { createPropertyRequest } from "@/lib/api/property-requests";
+import Swal from "sweetalert2";
 
 // Zod 스키마 정의 (API 타입과 일치)
 const propertyRequestSchema = z.object({
@@ -127,7 +128,13 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
         const result = await createPropertyRequest(apiData);
 
         // 성공 메시지 표시
-        alert("🎉 매물 의뢰가 성공적으로 접수되었습니다!\n\n24시간 내에 담당자가 연락드리겠습니다.");
+        await Swal.fire({
+          icon: "success",
+          title: "매물 의뢰 접수 완료!",
+          text: "24시간 내에 담당자가 연락드리겠습니다.",
+          confirmButtonText: "확인",
+          confirmButtonColor: "#10b981"
+        });
 
         // 폼 완전 초기화
         reset();
@@ -139,7 +146,13 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
         }
       }
     } catch (error) {
-      alert(`오류 발생: ${error instanceof Error ? error.message : "매물 의뢰 중 오류가 발생했습니다"}`);
+      await Swal.fire({
+        icon: "error",
+        title: "오류 발생",
+        text: error instanceof Error ? error.message : "매물 의뢰 중 오류가 발생했습니다",
+        confirmButtonText: "확인",
+        confirmButtonColor: "#ef4444"
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -368,12 +381,7 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
               >
                 이전 단계
               </Button>
-              <Button 
-                type="button" 
-                onClick={handleFormSubmit}
-                className="flex-1" 
-                disabled={isLoading || isSubmitting}
-              >
+              <Button type="button" onClick={handleFormSubmit} className="flex-1" disabled={isLoading || isSubmitting}>
                 {isLoading || isSubmitting ? "제출 중..." : "문의하기"}
               </Button>
             </div>
