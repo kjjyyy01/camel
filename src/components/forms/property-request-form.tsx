@@ -79,16 +79,11 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
 
     const isValid = await trigger(fieldsToValidate as (keyof PropertyRequestFormData)[]);
     if (isValid) {
-      // 현재 단계의 값들이 올바른지 한번 더 체크
-      const currentValues = getValues();
-      console.log(`단계 ${step} 완료 - 현재 값들:`, currentValues);
-
       // 다음 단계로 넘어가기 전에 해당 필드 초기화
       if (step === 1) {
         // property_id 필드가 실수로 설정되지 않았는지 확인하고 초기화
         setValue("property_id", "");
         clearErrors("property_id");
-        console.log("property_id 필드 초기화 완료");
       }
 
       setStep(step + 1);
@@ -101,12 +96,9 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); // 기본 폼 제출 방지
-    
-    console.log("폼 제출 이벤트 발생, 현재 step:", step);
 
     // step 3이 아니면 제출하지 않음
     if (step !== 3) {
-      console.log("step 3이 아니므로 제출하지 않음");
       return;
     }
 
@@ -131,11 +123,8 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
           budget_max: data.budget_max || null,
         };
 
-        console.log("API 전송 데이터:", apiData);
-
         // 직접 Supabase에 저장
         const result = await createPropertyRequest(apiData);
-        console.log("매물 의뢰 성공:", result);
 
         // 성공 메시지 표시
         alert("🎉 매물 의뢰가 성공적으로 접수되었습니다!\n\n24시간 내에 담당자가 연락드리겠습니다.");
@@ -150,8 +139,7 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
         }
       }
     } catch (error) {
-      console.error("매물 의뢰 제출 실패:", error);
-      alert(`❌ 오류 발생: ${error instanceof Error ? error.message : "매물 의뢰 중 오류가 발생했습니다"}`);
+      alert(`오류 발생: ${error instanceof Error ? error.message : "매물 의뢰 중 오류가 발생했습니다"}`);
     } finally {
       setIsSubmitting(false);
     }

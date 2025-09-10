@@ -8,7 +8,6 @@ const supabase = createClient();
  */
 export const createPropertyRequest = async (data: CreatePropertyRequestData): Promise<PropertyRequest> => {
   try {
-    console.log("클라이언트에서 API 호출:", data);
 
     const response = await fetch('/api/property-requests', {
       method: 'POST',
@@ -24,10 +23,8 @@ export const createPropertyRequest = async (data: CreatePropertyRequestData): Pr
     }
 
     const result = await response.json();
-    console.log("API 응답 성공:", result);
     return result.data;
   } catch (error) {
-    console.error("매물 의뢰 API 호출 중 오류:", error);
     throw error;
   }
 };
@@ -44,13 +41,11 @@ export const getUserPropertyRequests = async (userId: string): Promise<PropertyR
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("매물 의뢰 목록 조회 실패:", error);
       throw new Error(`매물 의뢰 목록을 가져오지 못했습니다: ${error.message}`);
     }
 
     return data || [];
   } catch (error) {
-    console.error("매물 의뢰 목록 조회 중 오류:", error);
     throw error;
   }
 };
@@ -63,13 +58,11 @@ export const getPropertyRequest = async (id: string): Promise<PropertyRequest | 
     const { data, error } = await supabase.from("property_requests").select("*").eq("id", id).single();
 
     if (error) {
-      console.error("매물 의뢰 조회 실패:", error);
       throw new Error(`매물 의뢰를 가져오지 못했습니다: ${error.message}`);
     }
 
     return data;
   } catch (error) {
-    console.error("매물 의뢰 조회 중 오류:", error);
     throw error;
   }
 };
@@ -114,13 +107,11 @@ export const getAllPropertyRequests = async (): Promise<PropertyRequest[]> => {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("전체 매물 의뢰 목록 조회 실패:", error);
       throw new Error(`전체 매물 의뢰 목록을 가져오지 못했습니다: ${error.message}`);
     }
 
     return data || [];
   } catch (error) {
-    console.error("전체 매물 의뢰 목록 조회 중 오류:", error);
     throw error;
   }
 };
