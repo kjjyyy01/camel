@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PropertyRequestForm } from "@/components/forms/property-request-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Clock, Phone, Mail, MessageCircle, ArrowLeft, Building, Users, Star } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 type PropertyRequestFormData = {
   name: string;
@@ -33,6 +34,34 @@ export default function RequestPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [submittedData, setSubmittedData] = useState<PropertyRequestFormData | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  const supabase = createClient();
+
+  // 사용자 인증 상태 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+      } catch (error) {
+        console.error("인증 확인 실패:", error);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    // 인증 상태 변경 감지
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase.auth]);
 
   const handleSubmit = async (data: any) => {
     setIsLoading(true);
@@ -92,6 +121,75 @@ export default function RequestPage() {
     }
   };
 
+
+  // 인증 로딩 중
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 임시: 테스트를 위해 로그인 체크 비활성화
+  if (false && !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto px-4">
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader className="text-center">
+              <Building className="h-16 w-16 text-primary mx-auto mb-4" />
+              <CardTitle className="text-2xl font-bold">로그인이 필요합니다</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6 text-center">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-800 mb-2">매물 의뢰를 위한 로그인</h3>
+                <p className="text-sm text-blue-700">
+                  매물 의뢰 서비스를 이용하시려면 먼저 로그인해주세요.
+                  <br />
+                  로그인하시면 의뢰 내역 관리와 상담 진행 상황을 확인하실 수 있습니다.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <Users className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                  <h4 className="font-semibold text-green-800">의뢰 내역 관리</h4>
+                  <p className="text-sm text-green-600">과거 의뢰 기록 확인</p>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <MessageCircle className="h-8 w-8 text-purple-500 mx-auto mb-2" />
+                  <h4 className="font-semibold text-purple-800">실시간 상담</h4>
+                  <p className="text-sm text-purple-600">담당자와 직접 소통</p>
+                </div>
+                <div className="text-center p-4 bg-orange-50 rounded-lg">
+                  <Star className="h-8 w-8 text-orange-500 mx-auto mb-2" />
+                  <h4 className="font-semibold text-orange-800">맞춤 추천</h4>
+                  <p className="text-sm text-orange-600">개인별 맞춤 서비스</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button onClick={() => router.push("/auth/login")} className="flex-1">
+                  로그인하기
+                </Button>
+                <Button onClick={() => router.push("/auth/signup")} variant="outline" className="flex-1">
+                  회원가입하기
+                </Button>
+              </div>
+
+              <div className="text-center text-sm text-gray-500 pt-4 border-t">
+                <p>이미 계정이 있으신가요? 로그인 후 매물 의뢰를 진행하세요.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (isSubmitted && submittedData) {
     return (
