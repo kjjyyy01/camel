@@ -14,6 +14,14 @@ import { PropertyMap } from "@/components/map/property-map";
 import { PropertyImageGallery } from "@/components/ui/property-image-gallery";
 import { formatPropertyPrice, formatArea, formatFloor } from "@/lib/utils/price-formatter";
 import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from "@/components/ui/carousel";
+import {
   ArrowLeft,
   Heart,
   Share2,
@@ -29,6 +37,7 @@ import {
   ShoppingBag,
   Hospital,
   GraduationCap,
+  Camera,
 } from "lucide-react";
 
 export default function PropertyDetailPage() {
@@ -36,6 +45,10 @@ export default function PropertyDetailPage() {
   const router = useRouter();
   const [property, setProperty] = useState<Property | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [api, setApi] = useState<CarouselApi>();
   const { toggleFavorite, isFavorite } = useFavorites();
   const isFavorited = property ? isFavorite(property.id) : false;
 
@@ -66,6 +79,22 @@ export default function PropertyDetailPage() {
       loadProperty();
     }
   }, [params.id]);
+
+  // Carousel API를 사용한 현재 슬라이드 추적
+  useEffect(() => {
+    if (!api) return;
+
+    const updateCurrentIndex = () => {
+      setCurrentImageIndex(api.selectedScrollSnap());
+    };
+
+    updateCurrentIndex();
+    api.on("select", updateCurrentIndex);
+
+    return () => {
+      api?.off("select", updateCurrentIndex);
+    };
+  }, [api]);
 
   const handleFavoriteClick = () => {
     if (!property) return;
@@ -149,15 +178,107 @@ export default function PropertyDetailPage() {
         </div>
       </div>
 
-      {/* 메인 이미지 */}
-      <div className="relative h-64 md:h-96">
-        <Image
-          src={property.images?.[0] || "/images/placeholder-property.jpg"}
-          alt={property.title}
-          fill
-          className="object-cover"
-          priority
-        />
+      {/* 메인 이미지 Carousel */}
+      <div className="relative h-64 md:h-96 bg-gray-100">
+        {property.images && property.images.length > 0 ? (
+          <Carousel 
+            className="w-full h-full" 
+            setApi={setApi}
+            opts={{
+              loop: true,
+              align: "center",
+            }}
+          >
+            <CarouselContent className="h-64 md:h-96 -ml-0">
+              {property.images.map((image, index) => (
+                <CarouselItem key={index} className="h-64 md:h-96 pl-0">
+                  <div className="relative h-64 md:h-96 w-full">
+                    {/* 이미지 로딩 중 스켈레톤 */}
+                    {imageLoading && (
+                      <div className="absolute inset-0 animate-pulse bg-gray-200 flex items-center justify-center">
+                        <div className="text-gray-400">
+                          <Building className="h-12 w-12" />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* 이미지 에러 시 대체 콘텐츠 */}
+                    {imageError && (
+                      <div className="absolute inset-0 bg-gray-100 flex flex-col items-center justify-center">
+                        <Building className="h-16 w-16 text-gray-400 mb-2" />
+                        <p className="text-gray-500 text-sm">이미지를 불러올 수 없습니다</p>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => {
+                            setImageError(false);
+                            setImageLoading(true);
+                          }}
+                        >
+                          다시 시도
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {/* 메인 이미지 */}
+                    {!imageError && (
+                      <Image
+                        src={image}
+                        alt={`${property.title} 사진 ${index + 1}`}
+                        fill
+                        className={`object-cover transition-opacity duration-300 ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+                        priority={index === 0}
+                        onLoad={() => setImageLoading(false)}
+                        onError={() => {
+                          setImageLoading(false);
+                          setImageError(true);
+                        }}
+                      />
+                    )}
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            
+            {/* Carousel 네비게이션 - 여러 이미지가 있을 때만 표시 */}
+            {property.images.length > 1 && (
+              <>
+                <CarouselPrevious className="left-4 bg-black/50 border-0 text-white hover:bg-black/70" />
+                <CarouselNext className="right-4 bg-black/50 border-0 text-white hover:bg-black/70" />
+                
+                {/* 인디케이터 (점들) */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                  {property.images.map((_, index) => (
+                    <button
+                      key={index}
+                      className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                        index === currentImageIndex 
+                          ? 'bg-white' 
+                          : 'bg-white/50 hover:bg-white/70'
+                      }`}
+                      onClick={() => api?.scrollTo(index)}
+                    />
+                  ))}
+                </div>
+                
+                {/* 이미지 개수 표시 */}
+                <div className="absolute bottom-4 right-4 bg-black bg-opacity-60 text-white px-3 py-1 rounded-lg text-sm flex items-center gap-1">
+                  <Camera className="h-4 w-4" />
+                  {currentImageIndex + 1} / {property.images.length}
+                </div>
+              </>
+            )}
+          </Carousel>
+        ) : (
+          /* 이미지가 없을 때 플레이스홀더 */
+          <div className="h-full flex items-center justify-center bg-gray-100">
+            <div className="text-center text-gray-400">
+              <Building className="h-16 w-16 mx-auto mb-2" />
+              <p>이미지가 없습니다</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 매물 정보 */}
