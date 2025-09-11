@@ -14,7 +14,6 @@ export async function POST(request: NextRequest) {
     // 현재 로그인된 사용자 정보 가져오기
     const {
       data: { user },
-      error: userError,
     } = await supabase.auth.getUser();
 
     // 필수 필드 검증
@@ -68,7 +67,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("매물 의뢰 생성 실패:", error);
       return NextResponse.json(
         { 
           error: '매물 의뢰 등록 중 오류가 발생했습니다',
@@ -88,8 +86,6 @@ export async function POST(request: NextRequest) {
     )
 
   } catch (error) {
-    console.error('매물 의뢰 생성 API 오류:', error)
-    
     return NextResponse.json(
       { 
         error: '매물 의뢰 등록 중 오류가 발생했습니다',
@@ -130,7 +126,6 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false })
 
       if (error) {
-        console.error('전화번호 기반 의뢰 조회 실패:', error)
         return NextResponse.json(
           { 
             error: '의뢰 조회 중 오류가 발생했습니다',
@@ -155,8 +150,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('매물 의뢰 목록 조회 API 오류:', error)
-    
     return NextResponse.json(
       { 
         error: '매물 의뢰 목록을 가져오는 중 오류가 발생했습니다',
@@ -174,17 +167,11 @@ export async function DELETE(request: NextRequest) {
     const requestId = url.searchParams.get('id')
     const rawPhone = url.searchParams.get('phone')
 
-    console.log('=== 의뢰 취소 API 호출 ===')
-    console.log('Request ID:', requestId)
-    console.log('Raw Phone:', rawPhone)
-
     // 전화번호 정규화 및 포맷팅
     const normalizedPhone = rawPhone?.replace(/[^\d]/g, '') || ''
     const phone = normalizedPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3')
-    console.log('Formatted Phone:', phone)
 
     if (!requestId) {
-      console.log('ERROR: 의뢰 ID 누락')
       return NextResponse.json(
         { error: '의뢰 ID가 필요합니다' },
         { status: 400 }
@@ -192,7 +179,6 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (!phone) {
-      console.log('ERROR: 전화번호 누락')
       return NextResponse.json(
         { error: '전화번호가 필요합니다' },
         { status: 400 }
@@ -201,10 +187,8 @@ export async function DELETE(request: NextRequest) {
 
     // 서버 사이드 Supabase 클라이언트 생성
     const supabase = await createClient()
-    console.log('Supabase 클라이언트 생성 완료')
 
     // 해당 의뢰가 입력된 전화번호와 일치하는지 확인
-    console.log('=== 의뢰 검색 시작 ===')
     const { data: existingRequest, error: fetchError } = await supabase
       .from('property_requests')
       .select('*')
@@ -212,38 +196,24 @@ export async function DELETE(request: NextRequest) {
       .eq('inquirer_phone', phone)
       .single()
 
-    console.log('검색 결과:', existingRequest)
-    console.log('검색 에러:', fetchError)
-
     if (fetchError || !existingRequest) {
-      console.log('ERROR: 의뢰를 찾을 수 없음')
       return NextResponse.json(
         { 
-          error: '해당 의뢰를 찾을 수 없거나 전화번호가 일치하지 않습니다',
-          debug: {
-            requestId,
-            phone,
-            fetchError: fetchError?.message
-          }
+          error: '해당 의뢰를 찾을 수 없거나 전화번호가 일치하지 않습니다'
         },
         { status: 404 }
       )
     }
 
     // 의뢰 삭제
-    console.log('=== 의뢰 삭제 시작 ===')
     const { data: deleteData, error: deleteError } = await supabase
       .from('property_requests')
       .delete()
       .eq('id', requestId)
       .eq('inquirer_phone', phone)
-      .select() // 삭제된 데이터 확인을 위해 추가
-
-    console.log('삭제 결과:', deleteData)
-    console.log('삭제 에러:', deleteError)
+      .select()
 
     if (deleteError) {
-      console.error('의뢰 삭제 실패:', deleteError)
       return NextResponse.json(
         { 
           error: '의뢰 취소 중 오류가 발생했습니다',
@@ -253,7 +223,6 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    console.log('=== 의뢰 삭제 성공 ===')
     return NextResponse.json(
       { 
         message: '의뢰가 성공적으로 취소되었습니다',
@@ -263,8 +232,6 @@ export async function DELETE(request: NextRequest) {
     )
 
   } catch (error) {
-    console.error('의뢰 취소 API 오류:', error)
-    
     return NextResponse.json(
       { 
         error: '의뢰 취소 중 오류가 발생했습니다',

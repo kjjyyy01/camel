@@ -5,49 +5,24 @@ import InquiryPhoneForm from "./inquiry-phone-form";
 import InquiryResultCard from "./inquiry-result-card";
 import { normalizePhoneNumber } from "@/lib/utils/phone-validator";
 import { Button } from "@/components/ui/button";
-import { PropertyRequest } from "@/types/property-request";
+import { usePropertyRequestsByPhone } from "@/hooks/use-property-requests";
 
 export default function InquiryLookupPage() {
   const [searchPhone, setSearchPhone] = useState<string>("");
   const [hasSearched, setHasSearched] = useState(false);
-  const [requests, setRequests] = useState<PropertyRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
 
-  // 실제 API 호출로 의뢰 조회
-  const fetchRequests = async (phone: string) => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // 실제 API 호출
-      const response = await fetch(`/api/property-requests?phone=${encodeURIComponent(phone)}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '의뢰 조회에 실패했습니다');
-      }
-      
-      const result = await response.json();
-      setRequests(result.data || []);
-    } catch (err) {
-      setError(err as Error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const refetch = () => {
-    if (searchPhone) {
-      fetchRequests(searchPhone);
-    }
-  };
+  // Tanstack Query 훅 사용
+  const { 
+    data: requests = [], 
+    isLoading, 
+    error, 
+    refetch 
+  } = usePropertyRequestsByPhone(searchPhone, hasSearched && !!searchPhone);
 
   const handlePhoneSubmit = (phone: string) => {
     const normalized = normalizePhone(phone);
     setSearchPhone(normalized);
     setHasSearched(true);
-    fetchRequests(normalized);
   };
 
   const handleReset = () => {
@@ -56,12 +31,10 @@ export default function InquiryLookupPage() {
   };
 
   const handleRetry = () => {
-    if (searchPhone) {
-      refetch();
-    }
+    refetch();
   };
 
-  const handleRequestCancel = (requestId: string) => {
+  const handleRequestCancel = () => {
     // 의뢰 취소 후 목록 새로고침
     refetch();
   };
@@ -86,7 +59,7 @@ export default function InquiryLookupPage() {
               <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
                 <div className="text-red-600 text-4xl mb-4">⚠️</div>
                 <h3 className="text-lg font-semibold text-red-800 mb-2">조회 중 오류가 발생했습니다</h3>
-                <p className="text-red-600 mb-4">{error.message || "잠시 후 다시 시도해주세요"}</p>
+                <p className="text-red-600 mb-4">{error?.message || "잠시 후 다시 시도해주세요"}</p>
                 <div className="space-x-2">
                   <Button onClick={handleRetry} variant="outline">
                     다시 시도

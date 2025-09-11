@@ -8,42 +8,40 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Clock, Phone, Mail, MessageCircle, ArrowLeft, Building, Users, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { User } from "@supabase/supabase-js";
+import { useCreatePropertyRequest } from "@/hooks/use-property-requests";
 
-type PropertyRequestFormData = {
+// PropertyRequestForm에서 전달되는 데이터 타입
+type FormData = {
   name: string;
   phone: string;
-  email: string;
-  propertyType: string;
-  transactionType?: string;
-  location: string;
-  property_id?: string;
-  budgetMin?: string;
-  budgetMax?: string;
-  areaMin?: string;
-  areaMax?: string;
-  moveInDate?: string;
-  requirements?: string;
-  additionalInfo?: string;
-  contactMethod: string[];
-  contactTime?: string;
+  property_id: string;
+  email?: string;
+  request_type?: "viewing" | "consultation" | "negotiation" | "other";
+  message?: string;
+  budget_min?: number;
+  budget_max?: number;
 };
 
 export default function RequestPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [error, setError] = useState("");
-  const [submittedData, setSubmittedData] = useState<PropertyRequestFormData | null>(null);
-  const [user, setUser] = useState<any>(null);
+  const [submittedData, setSubmittedData] = useState<FormData | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   const supabase = createClient();
+
+  // Tanstack Query mutation 훅 사용
+  const { mutate: createRequest, isPending: isLoading, error: mutationError, reset } = useCreatePropertyRequest();
 
   // 사용자 인증 상태 확인
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         setUser(user);
       } catch (error) {
         console.error("인증 확인 실패:", error);
@@ -55,7 +53,9 @@ export default function RequestPage() {
     checkAuth();
 
     // 인증 상태 변경 감지
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       setAuthLoading(false);
     });
@@ -63,12 +63,11 @@ export default function RequestPage() {
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
 
-  const handleSubmit = async (data: any) => {
-    setIsLoading(true);
-    setError("");
+  const handleSubmit = async (data: FormData) => {
+    return new Promise<void>((resolve, reject) => {
+      reset(); // 이전 오류 초기화
 
-    try {
-      // PropertyRequestForm에서 받은 데이터를 그대로 API로 전송
+      // PropertyRequestForm에서 받은 데이터를 API 형식으로 변환
       const apiData = {
         property_id: data.property_id,
         inquirer_name: data.name,
@@ -80,47 +79,18 @@ export default function RequestPage() {
         budget_max: data.budget_max || null,
       };
 
-      console.log("전송할 데이터:", apiData);
-
-      // Supabase API 호출
-      const response = await fetch("/api/property-requests", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      createRequest(apiData, {
+        onSuccess: () => {
+          setSubmittedData(data);
+          setIsSubmitted(true);
+          resolve();
         },
-        body: JSON.stringify(apiData),
+        onError: () => {
+          reject();
+        },
       });
-
-      console.log("응답 상태:", response.status, response.statusText);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("API 오류 응답:", errorData);
-        console.error("응답 헤더:", Object.fromEntries(response.headers.entries()));
-        throw new Error(errorData.error || errorData.details || "매물 의뢰 등록에 실패했습니다");
-      }
-
-      const result = await response.json();
-      console.log("매물 의뢰 성공:", result);
-
-      setSubmittedData({
-        name: data.name,
-        phone: data.phone,
-        email: data.email || "",
-        propertyType: data.request_type || "상담",
-        location: data.property_id,
-        contactMethod: ["전화"],
-        property_id: data.property_id,
-      } as any);
-      setIsSubmitted(true);
-    } catch (error) {
-      console.error("매물 의뢰 제출 실패:", error);
-      setError(error instanceof Error ? error.message : "매물 의뢰 제출에 실패했습니다. 잠시 후 다시 시도해주세요.");
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
-
 
   // 인증 로딩 중
   if (authLoading) {
@@ -211,14 +181,21 @@ export default function RequestPage() {
                     <strong>연락처:</strong> {submittedData.phone}
                   </div>
                   <div>
-                    <strong>매물 ID:</strong> {submittedData.property_id || submittedData.location}
+                    <strong>매물 ID:</strong> {submittedData.property_id}
                   </div>
                   <div>
-                    <strong>문의 유형:</strong> {submittedData.propertyType}
+                    <strong>문의 유형:</strong> {submittedData.request_type || "상담"}
                   </div>
-                  <div>
-                    <strong>선호 연락방법:</strong> {submittedData.contactMethod.join(", ")}
-                  </div>
+                  {submittedData.email && (
+                    <div>
+                      <strong>이메일:</strong> {submittedData.email}
+                    </div>
+                  )}
+                  {submittedData.message && (
+                    <div>
+                      <strong>메시지:</strong> {submittedData.message}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -305,11 +282,14 @@ export default function RequestPage() {
             매물 의뢰 서비스
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-4">원하는 매물을 찾아드립니다</h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-4">
             전문 부동산 컨설턴트가 고객님의 요구사항에 맞는
             <br />
             최적의 상업용 매물을 찾아서 추천해드립니다.
           </p>
+          <div className="inline-block bg-green-50 border border-green-200 px-4 py-2 rounded-lg">
+            <p className="text-sm text-green-700 font-medium">📞 회원가입 없이도 매물 의뢰가 가능합니다</p>
+          </div>
         </div>
 
         {/* 서비스 특징 */}
@@ -344,9 +324,11 @@ export default function RequestPage() {
           </div>
         </div>
 
-        {error && (
+        {mutationError && (
           <Alert variant="destructive" className="max-w-2xl mx-auto mb-6">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>
+              {mutationError.message || "매물 의뢰 제출에 실패했습니다. 잠시 후 다시 시도해주세요."}
+            </AlertDescription>
           </Alert>
         )}
 
@@ -360,6 +342,14 @@ export default function RequestPage() {
               <CardTitle className="text-lg">이용 안내</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-gray-600">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h4 className="font-medium text-blue-800 mb-2">💡 비회원도 이용 가능</h4>
+                <p className="text-blue-700">
+                  회원가입 없이도 이름과 연락처만으로 매물 의뢰를 할 수 있습니다.
+                  <br />
+                  전문 컨설턴트가 동일한 품질의 서비스를 제공해드립니다.
+                </p>
+              </div>
               <div>
                 <h4 className="font-medium text-gray-900 mb-2">서비스 절차</h4>
                 <ol className="list-decimal list-inside space-y-1 ml-4">
