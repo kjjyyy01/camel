@@ -5,12 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { PropertyList } from '@/components/property/property-list'
 import { SearchBar } from '@/components/search/search-bar'
 import { useProperties } from '@/hooks/use-properties'
-
-interface SearchParams {
-  keyword: string
-  location: string
-  propertyType: string
-}
+import { SearchParams } from '@/types/search'
 
 function PropertiesContent() {
   const searchParams = useSearchParams()

@@ -2,12 +2,7 @@
 
 import { SearchBar } from '@/components/search/search-bar'
 import { useRouter } from 'next/navigation'
-
-interface SearchParams {
-  keyword: string
-  location: string
-  propertyType: string
-}
+import { SearchParams } from '@/types/search'
 
 export function HeroSection() {
   const router = useRouter()
@@ -18,7 +13,7 @@ export function HeroSection() {
     
     if (params.keyword) searchParams.set('keyword', params.keyword)
     if (params.location) searchParams.set('location', params.location)
-    if (params.propertyType !== 'all') searchParams.set('type', params.propertyType)
+    if (params.propertyType && params.propertyType !== 'all') searchParams.set('type', params.propertyType)
     
     // 검색 결과를 매물 목록 페이지에서 표시
     router.push(`/properties?${searchParams.toString()}`)

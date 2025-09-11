@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Filter, ChevronDown, RotateCcw } from 'lucide-react'
-import { PropertyType, TransactionType } from '@/types/property'
+import { PropertyType, TransactionType, SpecialFeature } from '@/types/property'
 
 export interface PropertyFilterOptions {
   propertyType: PropertyType | 'all'
@@ -25,6 +25,7 @@ export interface PropertyFilterOptions {
   hasParking: boolean
   yearBuiltMin: number | null
   yearBuiltMax: number | null
+  specialFeature: SpecialFeature | 'all'
 }
 
 interface PropertyFilterProps {
@@ -48,9 +49,18 @@ const TRANSACTION_TYPES = [
   { value: 'lease', label: '전세/월세' },
 ] as const
 
+const SPECIAL_FEATURES = [
+  { value: 'all', label: '전체' },
+  { value: '급매', label: '급매' },
+  { value: '큰길가', label: '큰길가' },
+  { value: '역세권', label: '역세권' },
+] as const
+
 const AMENITY_OPTIONS = [
   '엘리베이터', '주차장', '에어컨', '화장실', '인터넷',
-  '보안시설', '휠체어접근', '카페테리아', '회의실', '라운지'
+  '보안시설', '휠체어접근', 'CCTV', '소방시설', '비상구',
+  '카페테리아', '회의실', '라운지', '복합기', '프린터',
+  '무선인터넷', '유선인터넷', '전용화장실', '공용화장실', '샤워실'
 ]
 
 const DEFAULT_FILTERS: PropertyFilterOptions = {
@@ -66,6 +76,7 @@ const DEFAULT_FILTERS: PropertyFilterOptions = {
   hasParking: false,
   yearBuiltMin: null,
   yearBuiltMax: null,
+  specialFeature: 'all',
 }
 
 export function PropertyFilter({ onFilterChange, className = '' }: PropertyFilterProps) {
@@ -115,8 +126,8 @@ export function PropertyFilter({ onFilterChange, className = '' }: PropertyFilte
           
           <CollapsibleContent>
             <CardContent className="pt-4 space-y-6">
-              {/* 매물 유형 및 거래 유형 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 매물 유형, 거래 유형 및 기타 조건 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>매물 유형</Label>
                   <Select 
@@ -149,6 +160,25 @@ export function PropertyFilter({ onFilterChange, className = '' }: PropertyFilte
                       {TRANSACTION_TYPES.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
                           {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>기타 조건</Label>
+                  <Select 
+                    value={filters.specialFeature} 
+                    onValueChange={(value) => updateFilter('specialFeature', value as SpecialFeature | 'all')}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SPECIAL_FEATURES.map((feature) => (
+                        <SelectItem key={feature.value} value={feature.value}>
+                          {feature.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -258,7 +288,7 @@ export function PropertyFilter({ onFilterChange, className = '' }: PropertyFilte
               {/* 편의시설 */}
               <div className="space-y-3">
                 <Label>편의시설</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {AMENITY_OPTIONS.map((amenity) => (
                     <div key={amenity} className="flex items-center space-x-2">
                       <Checkbox
@@ -266,7 +296,7 @@ export function PropertyFilter({ onFilterChange, className = '' }: PropertyFilte
                         checked={filters.amenities.includes(amenity)}
                         onCheckedChange={(checked) => handleAmenityChange(amenity, checked as boolean)}
                       />
-                      <Label htmlFor={amenity} className="text-sm">{amenity}</Label>
+                      <Label htmlFor={amenity} className="text-sm cursor-pointer">{amenity}</Label>
                     </div>
                   ))}
                 </div>
