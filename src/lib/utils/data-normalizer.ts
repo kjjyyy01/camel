@@ -1,4 +1,4 @@
-import { Property, PropertyType, TransactionType, PropertyStatus } from "@/types/property";
+import { Property, PropertyType, TransactionType, PropertyStatus, SpecialFeature } from "@/types/property";
 
 // Mock 데이터 생성용 타입 정의
 interface MockPropertyItem {
@@ -273,8 +273,9 @@ export function generateMockProperties(count = 20): Property[] {
       total_floors: floor + Math.floor(seededRandom(i + 110) * 10) + 1,
       description: `깔끔하고 현대적인 ${getTypeNameKorean(type)}입니다. 교통이 편리하고 주변 상권이 발달되어 있습니다.`,
       images: generatePropertyImages(type, i),
-      amenities: ["주차장", "엘리베이터", "에어컨"].slice(0, Math.floor(seededRandom(i + 120) * 3) + 1),
+      amenities: generateRandomAmenities(i + 120),
       status: "available",
+      special_features: generateSpecialFeatures(i + 150),
       view_count: Math.floor(seededRandom(i + 130) * 1000),
       like_count: Math.floor(seededRandom(i + 140) * 100),
       created_at: new Date().toISOString(),
@@ -302,6 +303,65 @@ function getTypeNameKorean(type: PropertyType): string {
     factory: "공장",
   };
   return names[type] || "상업용";
+}
+
+/**
+ * 특수 조건 랜덤 생성
+ */
+function generateSpecialFeatures(seed: number): SpecialFeature[] {
+  const allFeatures: SpecialFeature[] = ['급매', '큰길가', '역세권'];
+  const selectedFeatures: SpecialFeature[] = [];
+  
+  // 각 특수 조건별로 확률 설정
+  const featureProbabilities = {
+    '급매': 0.15,  // 15% 확률
+    '큰길가': 0.25, // 25% 확률  
+    '역세권': 0.30  // 30% 확률
+  };
+  
+  allFeatures.forEach((feature, index) => {
+    if (seededRandom(seed + index + 100) < featureProbabilities[feature]) {
+      selectedFeatures.push(feature);
+    }
+  });
+  
+  return selectedFeatures;
+}
+
+/**
+ * 편의시설 랜덤 생성
+ */
+function generateRandomAmenities(seed: number): string[] {
+  const allAmenities = [
+    '엘리베이터', '주차장', '에어컨', '화장실', '인터넷',
+    '보안시설', 'CCTV', '소방시설', '비상구',
+    '카페테리아', '회의실', '라운지', '복합기', '프린터',
+    '무선인터넷', '전용화장실', '공용화장실'
+  ];
+  
+  const amenityCount = Math.floor(seededRandom(seed) * 6) + 2; // 2-7개
+  const selectedAmenities: string[] = [];
+  
+  // 기본 편의시설은 높은 확률로 포함
+  const basicAmenities = ['엘리베이터', '주차장', '화장실', '인터넷'];
+  basicAmenities.forEach((amenity, index) => {
+    if (seededRandom(seed + index + 100) > 0.3) { // 70% 확률
+      selectedAmenities.push(amenity);
+    }
+  });
+  
+  // 추가 편의시설 랜덤 선택
+  const remainingAmenities = allAmenities.filter(a => !selectedAmenities.includes(a));
+  for (let i = 0; i < Math.min(amenityCount - selectedAmenities.length, remainingAmenities.length); i++) {
+    const randomIndex = Math.floor(seededRandom(seed + i + 200) * remainingAmenities.length);
+    const selectedAmenity = remainingAmenities[randomIndex];
+    if (!selectedAmenities.includes(selectedAmenity)) {
+      selectedAmenities.push(selectedAmenity);
+      remainingAmenities.splice(randomIndex, 1);
+    }
+  }
+  
+  return selectedAmenities;
 }
 
 /**
