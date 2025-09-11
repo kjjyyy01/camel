@@ -43,8 +43,6 @@ NEXT_PUBLIC_KAKAO_MAP_API_KEY=your-kakao-map-api-key
 
 ```bash
 NEXT_PUBLIC_KAKAO_REST_API_KEY=your-kakao-rest-api-key
-KOREA_REAL_ESTATE_API_KEY=your-korea-real-estate-api-key
-KOREA_REAL_ESTATE_BASE_URL=https://apis.data.go.kr
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
 NEXT_PUBLIC_API_URL=https://your-domain.vercel.app
 ```
@@ -65,6 +63,5 @@ NEXT_PUBLIC_API_URL=https://your-domain.vercel.app
 3. API 키 권한이 활성화되었는지 확인
 
 ### Mock 데이터 관련 문제
-현재 실제 API 대신 Mock 데이터를 사용합니다. 프로덕션에서는:
-1. Supabase 연동 완료 시 실제 데이터베이스 데이터 사용
-2. 한국부동산원 API 연동 시 실제 매물 정보 제공
+현재 실제 부동산 API 대신 Mock 데이터를 사용합니다. 프로덕션에서는:
+1. Supabase 연동을 통한 실제 데이터베이스 데이터 사용
