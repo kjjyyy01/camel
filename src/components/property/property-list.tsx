@@ -14,7 +14,6 @@ interface PropertyListProps {
   hasMore?: boolean
   onLoadMore?: () => void
   onSortChange?: (sortBy: string) => void
-  onContactClick?: (property: Property) => void
   className?: string
 }
 
@@ -35,7 +34,6 @@ export function PropertyList({
   hasMore = false,
   onLoadMore,
   onSortChange,
-  onContactClick,
   className = ""
 }: PropertyListProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -169,7 +167,6 @@ export function PropertyList({
               <PropertyCard
                 key={property.id}
                 property={property}
-                onContactClick={onContactClick}
                 className={viewMode === 'list' ? 'md:flex md:flex-row' : ''}
               />
             ))}

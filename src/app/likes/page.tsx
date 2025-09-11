@@ -156,7 +156,6 @@ export default function LikesPage() {
               <PropertyCard 
                 key={property.id}
                 property={property}
-                onContactClick={() => {}}
               />
             ))}
           </div>

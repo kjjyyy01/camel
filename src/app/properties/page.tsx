@@ -5,7 +5,6 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { PropertyList } from '@/components/property/property-list'
 import { SearchBar } from '@/components/search/search-bar'
 import { useProperties } from '@/hooks/use-properties'
-import { Property } from '@/types/property'
 
 interface SearchParams {
   keyword: string
@@ -52,9 +51,6 @@ function PropertiesContent() {
   }
 
 
-  const handleContactClick = (property: Property) => {
-    alert(`${property.title}에 대한 문의를 시작합니다.`)
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -82,7 +78,6 @@ function PropertiesContent() {
             hasMore={false}
             onLoadMore={undefined}
             onSortChange={handleSortChange}
-            onContactClick={handleContactClick}
           />
         )}
       </div>

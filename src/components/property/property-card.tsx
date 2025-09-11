@@ -5,20 +5,18 @@ import { Property } from "@/types/property";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Building, Eye, Phone, Calendar, Heart } from "lucide-react";
+import { MapPin, Building, Eye, Calendar, Heart } from "lucide-react";
 import useLikesStore from "@/stores/likes-store";
 import { useLikesHydration } from "@/hooks/use-likes-hydration";
 
 interface PropertyCardProps {
   property: Property;
-  onContactClick?: (property: Property) => void;
   className?: string;
   showActions?: boolean;
 }
 
 export function PropertyCard({
   property,
-  onContactClick,
   className = "",
   showActions = true,
 }: PropertyCardProps) {
@@ -84,11 +82,6 @@ export function PropertyCard({
   };
 
 
-  const handleContactClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onContactClick?.(property);
-  };
 
   const handleDetailClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -222,11 +215,7 @@ export function PropertyCard({
           {/* 액션 버튼들 */}
           {showActions && (
             <div className="flex gap-2 pt-2">
-              <Button variant="outline" size="sm" className="flex-1 h-9" onClick={handleContactClick}>
-                <Phone className="h-4 w-4 mr-1" />
-                문의하기
-              </Button>
-              <Button variant="outline" size="sm" className="flex-1 h-9" onClick={handleDetailClick}>
+              <Button variant="outline" size="sm" className="w-full h-9" onClick={handleDetailClick}>
                 자세히 보기
               </Button>
             </div>
