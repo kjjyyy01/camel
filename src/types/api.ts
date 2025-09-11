@@ -19,27 +19,6 @@ export interface PaginatedResponse<T> {
   };
 }
 
-export interface KoreaRealEstateApiParams {
-  LAWD_CD?: string;
-  DEAL_YMD?: string;
-  serviceKey: string;
-  numOfRows?: number;
-  pageNo?: number;
-}
-
-export interface KoreaRealEstateProperty {
-  거래금액: string;
-  건축년도: string;
-  년: string;
-  법정동: string;
-  아파트: string;
-  월: string;
-  일: string;
-  전용면적: string;
-  지번: string;
-  층: string;
-  지역코드: string;
-}
 
 export interface KakaoMapSearchResult {
   place_name: string;

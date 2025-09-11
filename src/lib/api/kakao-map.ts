@@ -1,24 +1,14 @@
 import axios from 'axios';
-import { KakaoMapSearchResult, KakaoGeocodingResult } from '@/types/api';
+import { KakaoMapSearchResult } from '@/types/api';
 import { Location } from '@/types';
+
 
 const KAKAO_REST_API_KEY = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY;
 const KAKAO_MAP_API_KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY;
 
-// 배포 환경에서의 환경 변수 체크
-if (typeof window !== 'undefined') {
-  if (!KAKAO_MAP_API_KEY) {
-    console.error('❌ NEXT_PUBLIC_KAKAO_MAP_API_KEY is not set. 카카오 지도가 작동하지 않습니다.');
-    console.log('📝 Vercel에서 Environment Variables를 설정해주세요:');
-    console.log('   1. Vercel 대시보드 → Settings → Environment Variables');
-    console.log('   2. NEXT_PUBLIC_KAKAO_MAP_API_KEY 추가');
-  } else {
-    console.log('✅ 카카오 지도 API 키가 설정되었습니다.');
-  }
-  
-  if (!KAKAO_REST_API_KEY) {
-    console.warn('⚠️  NEXT_PUBLIC_KAKAO_REST_API_KEY is not set');
-  }
+// 환경 변수 체크
+if (typeof window !== 'undefined' && !KAKAO_MAP_API_KEY) {
+  console.error('카카오 지도 API 키가 설정되지 않았습니다.');
 }
 
 export class KakaoMapApi {
@@ -194,7 +184,7 @@ export class KakaoMapApi {
   }
 
   static isMapApiLoaded(): boolean {
-    return typeof window !== 'undefined' && !!(window as any).kakao?.maps;
+    return typeof window !== 'undefined' && !!window.kakao?.maps;
   }
 
   static getMapApiKey(): string | undefined {
@@ -215,40 +205,34 @@ export const kakaoMapApi = new KakaoMapApi();
 export const loadKakaoMapScript = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     if (KakaoMapApi.isMapApiLoaded()) {
-      console.log('카카오 지도 API 이미 로드됨')
       resolve();
       return;
     }
 
     try {
       const scriptUrl = KakaoMapApi.createMapScriptUrl();
-      console.log('카카오 지도 스크립트 URL:', scriptUrl)
       
       const script = document.createElement('script');
       script.type = 'text/javascript';
       script.src = scriptUrl;
       
       script.onload = () => {
-        console.log('카카오 지도 스크립트 로드됨')
-        if (!(window as any).kakao) {
+        if (!window.kakao) {
           reject(new Error('카카오 객체를 찾을 수 없습니다'));
           return;
         }
         
-        (window as any).kakao.maps.load(() => {
-          console.log('카카오 지도 라이브러리 초기화 완료')
+        window.kakao.maps.load(() => {
           resolve();
         });
       };
       
-      script.onerror = (error) => {
-        console.error('카카오 지도 스크립트 로드 실패:', error)
+      script.onerror = () => {
         reject(new Error('카카오 지도 API 스크립트 로드에 실패했습니다'));
       };
 
       document.head.appendChild(script);
     } catch (error) {
-      console.error('카카오 지도 스크립트 생성 실패:', error)
       reject(error);
     }
   });

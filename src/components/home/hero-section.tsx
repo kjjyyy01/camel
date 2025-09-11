@@ -1,9 +1,6 @@
 "use client"
 
 import { SearchBar } from '@/components/search/search-bar'
-import { Button } from '@/components/ui/button'
-import { MapIcon, ListIcon, Building2, Users, TrendingUp } from 'lucide-react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 interface SearchParams {

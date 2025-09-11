@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
@@ -24,13 +24,13 @@ export function PropertyImageGallery({ images, title, className = "" }: Property
     setSelectedIndex(null);
   };
 
-  const goToPrevious = () => {
+  const goToPrevious = useCallback(() => {
     setCurrentIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : images.length - 1));
-  };
+  }, [images.length]);
 
-  const goToNext = () => {
+  const goToNext = useCallback(() => {
     setCurrentIndex((prevIndex) => (prevIndex < images.length - 1 ? prevIndex + 1 : 0));
-  };
+  }, [images.length]);
 
   // 키보드 이벤트 처리
   useEffect(() => {
@@ -48,7 +48,7 @@ export function PropertyImageGallery({ images, title, className = "" }: Property
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [selectedIndex]);
+  }, [selectedIndex, goToNext, goToPrevious]);
 
   if (!images || images.length === 0) {
     return (

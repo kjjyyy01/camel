@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building, Phone, User, FileText } from "lucide-react";
 import { createPropertyRequest } from "@/lib/api/property-requests";
@@ -45,7 +44,6 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
   const [isSubmitting, setIsSubmitting] = useState(false);
   const {
     register,
-    handleSubmit,
     formState: { errors },
     setValue,
     trigger,
@@ -72,7 +70,6 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
   // 각 필드의 값을 watch로 가져오기
   const nameValue = watch("name");
   const phoneValue = watch("phone");
-  const emailValue = watch("email");
   const propertyIdValue = watch("property_id");
 
   const nextStep = async () => {
@@ -125,7 +122,7 @@ export function PropertyRequestForm({ onSubmit, isLoading = false }: PropertyReq
         };
 
         // 직접 Supabase에 저장
-        const result = await createPropertyRequest(apiData);
+        await createPropertyRequest(apiData);
 
         // 성공 메시지 표시
         await Swal.fire({

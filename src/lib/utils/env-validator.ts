@@ -10,7 +10,7 @@ interface EnvConfig {
 
 const ENV_CONFIG: EnvConfig = {
   required: ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "NEXT_PUBLIC_KAKAO_MAP_API_KEY"],
-  optional: ["NEXT_PUBLIC_KAKAO_REST_API_KEY", "NEXT_PUBLIC_KOREA_REAL_ESTATE_API_KEY", "NEXT_PUBLIC_API_BASE_URL"],
+  optional: ["NEXT_PUBLIC_KAKAO_REST_API_KEY", "NEXT_PUBLIC_API_BASE_URL"],
 };
 
 export function validateEnvironmentVariables() {
@@ -21,7 +21,7 @@ export function validateEnvironmentVariables() {
   const getEnvValue = (key: string) => {
     if (typeof window !== "undefined") {
       // 클라이언트 환경: NEXT_PUBLIC_ 변수만 접근 가능
-      return (window as any).env?.[key] || process.env[key];
+      return (window as Window & { env?: Record<string, string> }).env?.[key] || process.env[key];
     }
     // 서버 환경: 모든 환경 변수 접근 가능
     return process.env[key];

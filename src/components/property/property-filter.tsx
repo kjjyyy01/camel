@@ -72,7 +72,7 @@ export function PropertyFilter({ onFilterChange, className = '' }: PropertyFilte
   const [filters, setFilters] = useState<PropertyFilterOptions>(DEFAULT_FILTERS)
   const [isOpen, setIsOpen] = useState(false)
 
-  const updateFilter = (key: keyof PropertyFilterOptions, value: any) => {
+  const updateFilter = (key: keyof PropertyFilterOptions, value: PropertyFilterOptions[keyof PropertyFilterOptions]) => {
     const newFilters = { ...filters, [key]: value }
     setFilters(newFilters)
     onFilterChange(newFilters)

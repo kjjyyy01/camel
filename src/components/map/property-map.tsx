@@ -8,6 +8,7 @@ interface PropertyMapProps {
   properties?: Property[];
   center?: { lat: number; lng: number };
   level?: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onMapLoad?: (map: any) => void;
   onMarkerClick?: (property: Property) => void;
   className?: string;
@@ -28,7 +29,9 @@ export function PropertyMap({
   className = "w-full h-96",
 }: PropertyMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [map, setMap] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [markers, setMarkers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,30 +43,27 @@ export function PropertyMap({
         setIsLoading(true);
         setError(null);
 
-        console.log("카카오 지도 초기화 시작...");
-        console.log("API 키:", process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY ? "설정됨" : "없음");
 
         // 카카오 지도 스크립트 로드
         await loadKakaoMapScript();
 
-        console.log("카카오 지도 스크립트 로드 완료");
-        console.log("window.kakao:", !!window.kakao);
-        console.log("window.kakao.maps:", !!window.kakao?.maps);
 
         if (!mapRef.current) {
           console.warn("지도 컨테이너가 없습니다");
           return;
         }
 
-        console.log("지도 인스턴스 생성 중...");
 
         // 지도 생성
+        if (!window.kakao?.maps) {
+          throw new Error('카카오 지도 API가 로드되지 않았습니다');
+        }
+        
         const mapInstance = new window.kakao.maps.Map(mapRef.current, {
           center: new window.kakao.maps.LatLng(center.lat, center.lng),
           level: level,
         });
 
-        console.log("지도 인스턴스 생성 완료:", mapInstance);
 
         // 지도 컨트롤 추가
         const mapTypeControl = new window.kakao.maps.MapTypeControl();
@@ -77,10 +77,10 @@ export function PropertyMap({
 
         // 지도가 제대로 표시되도록 강제 리사이즈
         setTimeout(() => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (mapInstance as any).relayout();
         }, 100);
 
-        console.log("카카오 지도 초기화 성공!");
         setIsLoading(false);
       } catch (err) {
         console.error("카카오 지도 초기화 실패:", err);
@@ -95,11 +95,12 @@ export function PropertyMap({
 
   // 매물 마커 표시
   useEffect(() => {
-    if (!map || !window.kakao) return;
+    if (!map || !window.kakao?.maps) return;
 
     // 기존 마커 제거
     markers.forEach((marker) => marker.setMap(null));
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const newMarkers: any[] = [];
 
     properties.forEach((property) => {
@@ -140,6 +141,7 @@ export function PropertyMap({
 
       map.setBounds(bounds);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, properties, onMarkerClick]);
 
   // 매물 유형별 마커 이미지 생성
@@ -172,13 +174,6 @@ export function PropertyMap({
     );
   };
 
-  // 지도 중심 이동
-  const moveToLocation = (lat: number, lng: number) => {
-    if (!map) return;
-
-    const moveLatLng = new window.kakao.maps.LatLng(lat, lng);
-    map.setCenter(moveLatLng);
-  };
 
   // 지도 레벨 변경
   const setMapLevel = (newLevel: number) => {

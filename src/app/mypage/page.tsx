@@ -34,26 +34,6 @@ const mockPropertyRequests = [
   }
 ]
 
-const mockFavoriteProperties = [
-  {
-    id: '1',
-    title: '강남역 초역세권 프리미엄 오피스',
-    address: '서울 강남구 강남대로 123',
-    price: 800000000,
-    area: 85,
-    type: 'office',
-    images: ['/placeholder-property.jpg']
-  },
-  {
-    id: '2',
-    title: '홍대입구 복합상가 1층 매장',
-    address: '서울 마포구 홍익로 456',
-    price: 50000000,
-    area: 45,
-    type: 'retail',
-    images: ['/placeholder-property.jpg']
-  }
-]
 
 export default function MyPage() {
   const { user, loading } = useAuth()
@@ -89,14 +69,6 @@ export default function MyPage() {
     return statusMap[status as keyof typeof statusMap] || { text: status, variant: 'secondary' as const }
   }
 
-  const formatPrice = (price: number) => {
-    if (price >= 100000000) {
-      return `${(price / 100000000).toFixed(1)}억원`
-    } else if (price >= 10000) {
-      return `${(price / 10000).toFixed(0)}만원`
-    }
-    return `${price.toLocaleString()}원`
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">

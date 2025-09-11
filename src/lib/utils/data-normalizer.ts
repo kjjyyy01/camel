@@ -1,28 +1,65 @@
 import { Property, PropertyType, TransactionType, PropertyStatus } from "@/types/property";
 
+// Mock 데이터 생성용 타입 정의
+interface MockPropertyItem {
+  serialNumber?: string;
+  transactionNumber?: string;
+  buildingType?: string;
+  usage?: string;
+  transactionCategory?: string;
+  contractType?: string;
+  detailedAddress?: string;
+  latitude?: string;
+  longitude?: string;
+  transactionAmount?: string;
+  salePrice?: string;
+  price?: number;
+  deposit?: string;
+  jeonseAmount?: string;
+  monthlyRent?: string;
+  rentalFee?: string;
+  area?: string;
+  exclusiveArea?: string;
+  floor?: string;
+  targetFloor?: string;
+  totalFloors?: string;
+  city?: string;
+  district?: string;
+  gu?: string;
+  legalDong?: string;
+  dong?: string;
+  landNumber?: string;
+  constructionYear?: string;
+  elevator?: string | boolean;
+  parkingAvailable?: string | boolean;
+  airConditioner?: string | boolean;
+  restroom?: string | boolean;
+  internet?: string | boolean;
+}
+
 /**
- * Korea Real Estate API 응답을 표준 Property 형식으로 변환
+ * Mock 데이터를 표준 Property 형식으로 변환
  */
 export class DataNormalizer {
   /**
-   * 상업용 부동산 데이터 정규화
+   * Mock 상업용 부동산 데이터 정규화
    */
-  static normalizeCommercialProperty(item: any): Property {
+  static normalizeCommercialProperty(item: MockPropertyItem): Property {
     return {
       id: this.generatePropertyId(item),
-      type: this.mapToPropertyType(item.건물용도 || item.용도),
-      transaction_type: this.mapToTransactionType(item.거래구분 || item.계약구분),
+      type: this.mapToPropertyType(item.buildingType || item.usage || ""),
+      transaction_type: this.mapToTransactionType(item.transactionCategory || item.contractType || ""),
       title: this.generateTitle(item),
       address: this.normalizeAddress(item),
-      detailed_address: item.상세주소,
-      latitude: parseFloat(item.위도) || 37.5665,
-      longitude: parseFloat(item.경도) || 126.978,
+      detailed_address: item.detailedAddress,
+      latitude: parseFloat(item.latitude || "37.5665") || 37.5665,
+      longitude: parseFloat(item.longitude || "126.978") || 126.978,
       price: this.normalizePrice(item),
       deposit: this.normalizeDeposit(item),
       monthly_rent: this.normalizeMonthlyRent(item),
-      area: this.normalizeArea(item.면적 || item.전용면적),
-      floor: item.층 || item.해당층 || 1,
-      total_floors: item.총층수 || 1,
+      area: this.normalizeArea(item.area || item.exclusiveArea),
+      floor: parseInt(item.floor || item.targetFloor || "1") || 1,
+      total_floors: parseInt(item.totalFloors || "1") || 1,
       description: this.generateDescription(item),
       images: [],
       amenities: this.normalizeAmenities(item),
@@ -37,15 +74,15 @@ export class DataNormalizer {
   /**
    * Mock 데이터 생성
    */
-  private static generatePropertyId(item: any): string {
-    const base = item.일련번호 || item.거래번호 || Math.random().toString(36);
+  private static generatePropertyId(item: MockPropertyItem): string {
+    const base = item.serialNumber || item.transactionNumber || Math.random().toString(36);
     return `prop_${base.toString().replace(/[^a-zA-Z0-9]/g, "")}_${Date.now()}`;
   }
 
-  private static generateTitle(item: any): string {
-    const type = this.mapToPropertyType(item.건물용도 || item.용도);
-    const area = this.normalizeArea(item.면적 || item.전용면적);
-    const location = item.법정동 || item.동 || "서울";
+  private static generateTitle(item: MockPropertyItem): string {
+    const type = this.mapToPropertyType(item.buildingType || item.usage || "");
+    const area = this.normalizeArea(item.area || item.exclusiveArea);
+    const location = item.legalDong || item.dong || "서울";
 
     const typeNames = {
       office: "사무실",
@@ -58,18 +95,18 @@ export class DataNormalizer {
     return `${location} ${typeNames[type as keyof typeof typeNames] || "상업용"} ${area}㎡`;
   }
 
-  private static generateDescription(item: any): string {
+  private static generateDescription(item: MockPropertyItem): string {
     const parts = [];
 
-    if (item.층) parts.push(`${item.층}층`);
-    if (item.면적 || item.전용면적) parts.push(`${this.normalizeArea(item.면적 || item.전용면적)}㎡`);
-    if (item.건축년도) parts.push(`${item.건축년도}년 건축`);
+    if (item.floor) parts.push(`${item.floor}층`);
+    if (item.area || item.exclusiveArea) parts.push(`${this.normalizeArea(item.area || item.exclusiveArea)}㎡`);
+    if (item.constructionYear) parts.push(`${item.constructionYear}년 건축`);
 
     return parts.length > 0 ? parts.join(" · ") : "상세 정보는 문의해주세요.";
   }
 
-  private static normalizeAddress(item: any): string {
-    const parts = [item.시도 || "서울특별시", item.시군구 || item.구, item.법정동 || item.동, item.지번].filter(
+  private static normalizeAddress(item: MockPropertyItem): string {
+    const parts = [item.city || "서울특별시", item.district || item.gu, item.legalDong || item.dong, item.landNumber].filter(
       Boolean
     );
 
@@ -105,31 +142,31 @@ export class DataNormalizer {
   /**
    * 가격 정규화
    */
-  private static normalizePrice(item: any): number {
-    const salePrice = item.거래금액 || item.매매가격 || item.price || 0;
+  private static normalizePrice(item: MockPropertyItem): number {
+    const salePrice = item.transactionAmount || item.salePrice || item.price || 0;
     return salePrice ? this.parsePrice(salePrice) : 0;
   }
 
   /**
    * 보증금 정규화
    */
-  private static normalizeDeposit(item: any): number | undefined {
-    const deposit = item.보증금 || item.전세금 || 0;
+  private static normalizeDeposit(item: MockPropertyItem): number | undefined {
+    const deposit = item.deposit || item.jeonseAmount || 0;
     return deposit ? this.parsePrice(deposit) : undefined;
   }
 
   /**
    * 월세 정규화
    */
-  private static normalizeMonthlyRent(item: any): number | undefined {
-    const rent = item.월세 || item.임대료 || 0;
+  private static normalizeMonthlyRent(item: MockPropertyItem): number | undefined {
+    const rent = item.monthlyRent || item.rentalFee || 0;
     return rent ? this.parsePrice(rent) : undefined;
   }
 
   /**
    * 면적 정규화 (㎡ 단위)
    */
-  private static normalizeArea(area: any): number {
+  private static normalizeArea(area: string | number | undefined): number {
     if (!area) return 0;
 
     let numericArea = parseFloat(area.toString().replace(/[^\d.]/g, ""));
@@ -145,14 +182,14 @@ export class DataNormalizer {
   /**
    * 편의시설 정규화
    */
-  private static normalizeAmenities(item: any): string[] {
+  private static normalizeAmenities(item: MockPropertyItem): string[] {
     const amenities: string[] = [];
 
-    if (this.normalizeBoolean(item.엘리베이터)) amenities.push("엘리베이터");
-    if (this.normalizeBoolean(item.주차가능)) amenities.push("주차장");
-    if (this.normalizeBoolean(item.에어컨)) amenities.push("에어컨");
-    if (this.normalizeBoolean(item.화장실)) amenities.push("화장실");
-    if (this.normalizeBoolean(item.인터넷)) amenities.push("인터넷");
+    if (this.normalizeBoolean(item.elevator)) amenities.push("엘리베이터");
+    if (this.normalizeBoolean(item.parkingAvailable)) amenities.push("주차장");
+    if (this.normalizeBoolean(item.airConditioner)) amenities.push("에어컨");
+    if (this.normalizeBoolean(item.restroom)) amenities.push("화장실");
+    if (this.normalizeBoolean(item.internet)) amenities.push("인터넷");
 
     return amenities;
   }
@@ -160,7 +197,7 @@ export class DataNormalizer {
   /**
    * Boolean 값 정규화
    */
-  private static normalizeBoolean(value: any): boolean {
+  private static normalizeBoolean(value: string | boolean | undefined): boolean {
     if (typeof value === "boolean") return value;
     if (typeof value === "string") {
       const lowerValue = value.toLowerCase();
@@ -172,7 +209,7 @@ export class DataNormalizer {
   /**
    * 가격 문자열을 숫자로 변환 (만원 단위)
    */
-  private static parsePrice(price: any): number {
+  private static parsePrice(price: string | number): number {
     if (typeof price === "number") return price;
 
     const priceStr = price.toString().replace(/[^\d]/g, "");
@@ -183,8 +220,6 @@ export class DataNormalizer {
   }
 }
 
-// Mock 데이터 캐시
-let cachedMockProperties: Property[] | null = null;
 
 // 시드 기반 난수 생성 함수 (일관된 결과를 위해)
 function seededRandom(seed: number): number {
@@ -247,8 +282,6 @@ export function generateMockProperties(count = 20): Property[] {
     });
   }
 
-  // 생성된 데이터를 캐시에 저장
-  cachedMockProperties = properties;
 
   return properties.slice(0, count);
 }
@@ -257,7 +290,7 @@ export function generateMockProperties(count = 20): Property[] {
  * Mock 데이터 캐시 초기화 (테스트나 개발용)
  */
 export function clearMockPropertiesCache() {
-  cachedMockProperties = null;
+  // 캐시가 제거되었으므로 빈 함수로 유지
 }
 
 function getTypeNameKorean(type: PropertyType): string {
