@@ -1,30 +1,17 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, MapPin, Building } from "lucide-react";
+import { Search, MapPin } from "lucide-react";
 import { KakaoMapApi } from "@/lib/api/kakao-map";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PropertyType } from "@/types/property";
+import { SearchParams } from "@/types/search";
 
 interface SearchBarProps {
   onSearch?: (params: SearchParams) => void;
   className?: string;
 }
 
-interface SearchParams {
-  keyword: string;
-  location: string;
-  propertyType: PropertyType | "all";
-}
-
-const PROPERTY_TYPE_OPTIONS = [
-  { value: "all", label: "전체" },
-  { value: "office", label: "사무실" },
-  { value: "retail", label: "상가" },
-  { value: "building", label: "건물" },
-] as const;
 
 const POPULAR_LOCATIONS = [
   "강남구",
@@ -42,7 +29,6 @@ const POPULAR_LOCATIONS = [
 export function SearchBar({ onSearch, className }: SearchBarProps) {
   const [keyword, setKeyword] = useState("");
   const [location, setLocation] = useState("");
-  const [propertyType, setPropertyType] = useState<PropertyType | "all">("all");
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
@@ -86,7 +72,6 @@ export function SearchBar({ onSearch, className }: SearchBarProps) {
     const params: SearchParams = {
       keyword: keyword.trim(),
       location: location.trim(),
-      propertyType,
     };
 
     onSearch?.(params);
@@ -129,34 +114,34 @@ export function SearchBar({ onSearch, className }: SearchBarProps) {
   };
 
   return (
-    <div className={`w-full max-w-4xl mx-auto ${className}`}>
-      <div className="flex flex-col md:flex-row gap-2 p-4 bg-white rounded-lg shadow-lg border">
+    <div className={`w-full ${className}`}>
+      <div className="flex gap-2 p-2 bg-white rounded-lg">
         {/* 키워드 검색 */}
         <div className="flex-1 relative">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder="원하는 매물을 검색하세요 (예: 강남역 오피스텔)"
+              placeholder="매물 검색..."
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               onKeyDown={handleKeyPress}
-              className="pl-10 h-12"
+              className="pl-10 h-10 text-sm"
             />
           </div>
         </div>
 
         {/* 지역 선택 */}
-        <div className="relative md:w-48">
+        <div className="relative w-32">
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 z-10" />
             <Input
-              placeholder="지역을 입력하세요"
+              placeholder="지역"
               value={location}
               onChange={(e) => handleLocationChange(e.target.value)}
               onFocus={() => setShowLocationSuggestions(true)}
               onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 200)}
               onKeyDown={handleKeyPress}
-              className="pl-10 h-12"
+              className="pl-10 h-10 text-sm"
             />
           </div>
 
@@ -187,25 +172,9 @@ export function SearchBar({ onSearch, className }: SearchBarProps) {
           )}
         </div>
 
-        {/* 매물 유형 선택 */}
-        <div className="md:w-36">
-          <Select value={propertyType} onValueChange={(value) => setPropertyType(value as PropertyType | "all")}>
-            <SelectTrigger className="h-12 min-h-12">
-              <Building className="h-4 w-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PROPERTY_TYPE_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
 
         {/* 검색 버튼 */}
-        <Button onClick={handleSearch} className="h-12 px-8 bg-primary hover:bg-primary/90">
+        <Button onClick={handleSearch} className="h-10 px-6 bg-primary hover:bg-primary/90 text-sm">
           검색
         </Button>
       </div>
