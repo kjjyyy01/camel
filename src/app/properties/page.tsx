@@ -1,60 +1,99 @@
 "use client"
 
-import { useState, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { Suspense, useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { PropertyList } from '@/components/property/property-list'
-import { SearchBar } from '@/components/search/search-bar'
-import { useProperties } from '@/hooks/use-properties'
+import { HorizontalFilterBar } from '@/components/common/horizontal-filter-bar'
 import { SearchParams } from '@/types/search'
+import { MapFilterOptions, Property } from '@/types/property'
+import { generateMockProperties } from '@/lib/utils/data-normalizer'
+import { applyFilters } from '@/lib/utils/property-filter'
 
 function PropertiesContent() {
   const searchParams = useSearchParams()
-  const router = useRouter()
-  const [sortBy, setSortBy] = useState('latest')
+
+  // 상태 관리
+  const [properties, setProperties] = useState<Property[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [currentFilters, setCurrentFilters] = useState<MapFilterOptions>({})
 
   // URL 쿼리 파라미터에서 검색 조건 가져오기
   const keyword = searchParams.get('keyword') || ''
   const location = searchParams.get('location') || ''
-  const propertyType = searchParams.get('type') || 'all'
 
-  // Tanstack Query 훅 사용
-  const { 
-    properties: filteredProperties, 
-    isLoading, 
-    error 
-  } = useProperties({
-    keyword,
-    location,
-    propertyType,
-    sortBy
-  })
+  // 초기 매물 데이터 로드
+  useEffect(() => {
+    const loadProperties = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        
+        // Mock 데이터 로드
+        const baseProperties = generateMockProperties()
+        
+        // 검색 조건 적용
+        const searchConditions: Partial<SearchParams> = {}
+        if (keyword) searchConditions.keyword = keyword
+        if (location) searchConditions.location = location
+        
+        const filteredProperties = applyFilters(baseProperties, searchConditions, currentFilters)
+        setProperties(filteredProperties)
+      } catch (err) {
+        setError(err as Error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadProperties()
+  }, [keyword, location, currentFilters])
 
   const handleSearch = (searchConditions: SearchParams) => {
-    // URL 업데이트
-    const params = new URLSearchParams()
-    if (searchConditions.keyword) params.set('keyword', searchConditions.keyword)
-    if (searchConditions.location) params.set('location', searchConditions.location)
-    if (searchConditions.propertyType && searchConditions.propertyType !== 'all') {
-      params.set('type', searchConditions.propertyType)
-    }
-    
-    router.push(`/properties?${params.toString()}`)
+    setIsLoading(true)
+
+    // Mock 데이터에서 검색 조건과 필터 적용
+    const baseProperties = generateMockProperties()
+    const filteredProperties = applyFilters(baseProperties, searchConditions, currentFilters)
+
+    setProperties(filteredProperties)
+    setIsLoading(false)
   }
 
   const handleSortChange = (newSortBy: string) => {
-    setSortBy(newSortBy)
+    // 정렬 변경 로직을 나중에 구현
+    console.log('Sort changed:', newSortBy)
   }
 
+  const handleFilterChange = (newFilters: MapFilterOptions) => {
+    setCurrentFilters(newFilters)
+    setIsLoading(true)
 
+    // 현재 검색 조건은 유지하고 필터만 다시 적용
+    const baseProperties = generateMockProperties()
+    
+    // 검색 조건 적용
+    const searchConditions: Partial<SearchParams> = {}
+    if (keyword) searchConditions.keyword = keyword
+    if (location) searchConditions.location = location
+    
+    const filteredProperties = applyFilters(baseProperties, searchConditions, newFilters)
+
+    setProperties(filteredProperties)
+    setIsLoading(false)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 검색바 */}
+      {/* 필터 바 */}
       <div className="bg-white shadow-sm border-b sticky top-16 z-40">
-        <div className="container mx-auto py-6 px-4">
-          <SearchBar 
+        <div className="container mx-auto py-3 px-4">
+          <HorizontalFilterBar 
+            onFilterChange={handleFilterChange}
             onSearch={handleSearch}
-            className="max-w-6xl"
+            showSearch={true}
+            className="max-w-none"
+            searchPlaceholder="지역, 매물 검색... (예: 강남 사무실, 서초 상가)"
           />
         </div>
       </div>
@@ -68,10 +107,10 @@ function PropertiesContent() {
           </div>
         ) : (
           <PropertyList
-            properties={filteredProperties}
+            properties={properties}
             isLoading={isLoading}
             hasMore={false}
-            onLoadMore={undefined}
+            onLoadMore={() => {}}
             onSortChange={handleSortChange}
           />
         )}
