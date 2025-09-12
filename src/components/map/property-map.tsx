@@ -93,6 +93,28 @@ export function PropertyMap({
     initMap();
   }, [center.lat, center.lng, level, onMapLoad]);
 
+  // 화면 크기 변경 감지 및 지도 리레이아웃
+  useEffect(() => {
+    if (!map || !mapRef.current) return;
+
+    const handleResize = () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (map as any).relayout();
+    };
+
+    // ResizeObserver로 컨테이너 크기 변경 감지
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(mapRef.current);
+
+    // window resize 이벤트도 추가
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [map]);
+
   // 매물 마커 표시
   useEffect(() => {
     if (!map || !window.kakao?.maps) return;
@@ -238,11 +260,11 @@ export function PropertyMap({
   }
 
   return (
-    <div className="relative">
+    <div className="relative h-full">
       <div
         ref={mapRef}
         className={`${className} ${isLoading ? "opacity-50" : ""}`}
-        style={{ minHeight: "700px", height: "100%" }}
+        style={{ height: '100%', minHeight: '400px' }}
       />
 
       {isLoading && (

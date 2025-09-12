@@ -27,7 +27,6 @@ export default function MapPage() {
     loadProperties();
   }, []);
 
-
   const handleSearch = (params: SearchParams) => {
     setIsLoading(true);
 
@@ -51,7 +50,6 @@ export default function MapPage() {
     setIsLoading(false);
   };
 
-
   const handleMarkerClick = (property: Property) => {
     setSelectedProperty(property);
   };
@@ -63,11 +61,11 @@ export default function MapPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen bg-gray-50 flex flex-col">
       {/* 상단 헤더 - 통합 필터 바 */}
-      <div className="bg-white shadow-sm border-b sticky top-16 z-40">
+      <div className="bg-white shadow-sm border-b z-40 flex-shrink-0">
         <div className="container mx-auto py-3 px-4">
-          <HorizontalFilterBar 
+          <HorizontalFilterBar
             onFilterChange={handleFilterChange}
             onSearch={handleSearch}
             showSearch={true}
@@ -78,7 +76,7 @@ export default function MapPage() {
       </div>
 
       {/* 메인 컨텐츠 영역 - 지도만 */}
-      <div className="flex h-[calc(100vh-200px)]">
+      <div className="flex flex-1 overflow-hidden">
         {/* 지도 영역 */}
         <div className="flex-1 relative">
           <PropertyMap properties={properties} onMarkerClick={handleMarkerClick} className="w-full h-full" />
