@@ -6,8 +6,11 @@ import Image from "next/image";
 import { Property } from "@/types/property";
 import { generateMockProperties } from "@/lib/utils/data-normalizer";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PropertyMap } from "@/components/map/property-map";
 import { PropertyImageGallery } from "@/components/ui/property-image-gallery";
@@ -40,6 +43,8 @@ import {
 } from "lucide-react";
 import useLikesStore from "@/stores/likes-store";
 import { useLikesHydration } from "@/hooks/use-likes-hydration";
+import { createPropertyRequest } from "@/lib/api/property-requests";
+import Swal from "sweetalert2";
 
 export default function PropertyDetailPage() {
   const params = useParams();
@@ -53,6 +58,13 @@ export default function PropertyDetailPage() {
   const { isLiked, toggleLike } = useLikesStore();
   const isHydrated = useLikesStore(state => state.isHydrated);
   const [mounted, setMounted] = useState(false);
+  
+  // 상담 신청 폼 상태
+  const [consultationForm, setConsultationForm] = useState({
+    contact: "",
+    inquiry: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   useLikesHydration();
   
@@ -135,6 +147,99 @@ export default function PropertyDetailPage() {
       area: property.area,
       imageUrl: property.images?.[0],
     });
+  };
+
+  // 상담 신청 제출 핸들러
+  const handleConsultationSubmit = async () => {
+    if (!property) return;
+
+    // 유효성 검사
+    if (!consultationForm.contact.trim()) {
+      await Swal.fire({
+        icon: "error",
+        title: "연락처를 입력해주세요",
+        text: "상담을 위한 연락처가 필요합니다.",
+        confirmButtonColor: "#ef4444"
+      });
+      return;
+    }
+
+    // 전화번호 형식 검사 (한국 휴대폰/일반전화)
+    const phoneRegex = /^(010|011|016|017|018|019|02|031|032|033|041|042|043|044|051|052|053|054|055|061|062|063|064)-?\d{3,4}-?\d{4}$/;
+    if (!phoneRegex.test(consultationForm.contact.replace(/\s/g, ''))) {
+      await Swal.fire({
+        icon: "error",
+        title: "올바른 연락처를 입력해주세요",
+        text: "예: 010-1234-5678 또는 02-1234-5678",
+        confirmButtonColor: "#ef4444"
+      });
+      return;
+    }
+
+    if (!consultationForm.inquiry.trim()) {
+      await Swal.fire({
+        icon: "error",
+        title: "문의사항을 입력해주세요",
+        text: "상담 내용을 자세히 적어주세요.",
+        confirmButtonColor: "#ef4444"
+      });
+      return;
+    }
+
+    if (consultationForm.inquiry.trim().length < 10) {
+      await Swal.fire({
+        icon: "error",
+        title: "문의사항이 너무 짧습니다",
+        text: "최소 10자 이상 입력해주세요.",
+        confirmButtonColor: "#ef4444"
+      });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      // API 데이터 구성
+      const requestData = {
+        property_id: property.id,
+        inquirer_name: "고객", // 기본값
+        inquirer_phone: consultationForm.contact.trim(),
+        inquirer_email: null,
+        request_type: "consultation" as const,
+        message: consultationForm.inquiry.trim(),
+        budget_min: null,
+        budget_max: null,
+      };
+
+      // API 호출
+      await createPropertyRequest(requestData);
+
+      // 성공 메시지
+      await Swal.fire({
+        icon: "success",
+        title: "상담 신청이 완료되었습니다!",
+        text: "24시간 내에 담당자가 연락드리겠습니다.",
+        confirmButtonText: "확인",
+        confirmButtonColor: "#10b981"
+      });
+
+      // 폼 초기화
+      setConsultationForm({
+        contact: "",
+        inquiry: "",
+      });
+
+    } catch (error) {
+      await Swal.fire({
+        icon: "error",
+        title: "상담 신청 실패",
+        text: error instanceof Error ? error.message : "상담 신청 중 오류가 발생했습니다",
+        confirmButtonText: "확인",
+        confirmButtonColor: "#ef4444"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
 
@@ -566,6 +671,41 @@ export default function PropertyDetailPage() {
                     평일 09:00 - 18:00<br />
                     토요일 09:00 - 15:00
                   </p>
+                </div>
+
+                <Separator className="my-6" />
+
+                {/* 상담 신청 섹션 */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg text-gray-900">상담 신청</h3>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <Input
+                        placeholder="연락처"
+                        value={consultationForm.contact}
+                        onChange={(e) => setConsultationForm({...consultationForm, contact: e.target.value})}
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Textarea
+                        placeholder="문의 사항을 남겨주세요"
+                        value={consultationForm.inquiry}
+                        onChange={(e) => setConsultationForm({...consultationForm, inquiry: e.target.value})}
+                        className="w-full min-h-[100px]"
+                      />
+                    </div>
+                    
+                    <Button 
+                      className="w-full"
+                      disabled={isSubmitting}
+                      onClick={handleConsultationSubmit}
+                    >
+                      {isSubmitting ? "신청 중..." : "상담 신청"}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
